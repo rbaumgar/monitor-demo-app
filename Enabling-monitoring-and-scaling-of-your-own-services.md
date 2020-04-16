@@ -456,12 +456,42 @@ EOF
 service/prometheus-adapter created
 ```
 
+## Create a configmap
+
+```
+$ cat <<EOF | oc apply -f -
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-adapter-prometheus-config
+data:
+  prometheus-config.yaml: |
+    apiVersion: v1
+    clusters:
+    - cluster:
+        server: https://thanos-querier.openshift-monitoring.svc:9092
+        insecure-skip-tls-verify: true
+      name: prometheus-k8s
+    contexts:
+    - context:
+        cluster: prometheus-k8s
+        user: prometheus-k8s
+      name: prometheus-k8s
+    current-context: prometheus-k8s
+    kind: Config
+    preferences: {}
+    users:
+    - name: prometheus-k8s
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+```
+
 ## Configuration for deploying prometheus-adapter
 
 :star: Replace the image name with the correct name you got! (spec.template.spec.containers.image)
 
-```bash
-cat <<EOF | oc apply -f - 
+```
+$ cat <<EOF | oc apply -f - 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -484,25 +514,28 @@ spec:
       - name: prometheus-adapter
         image: openshift-release-dev/ocp-v4.3-art-dev 
         args:
+        - --prometheus-auth-config=/etc/prometheus-config/prometheus-config.yaml
         - --secure-port=6443
         - --tls-cert-file=/var/run/serving-cert/tls.crt
         - --tls-private-key-file=/var/run/serving-cert/tls.key
         - --logtostderr=true
-        - --prometheus-url=https://prometheus-user-workload.openshift-user-workload-monitoring.svc:9090/
+        - --prometheus-url=https://thanos-querier.openshift-monitoring.svc:9092
         - --metrics-relist-interval=1m
         - --v=4
         - --config=/etc/adapter/config.yaml
         ports:
         - containerPort: 6443
         volumeMounts:
-        - mountPath: /var/run/serving-cert
-          name: volume-serving-cert
+        - name: volume-serving-cert
+          mountPath: /var/run/serving-cert
           readOnly: true
-        - mountPath: /etc/adapter/
-          name: config
+        - name: config
+          mountPath: /etc/adapter/
           readOnly: true
-        - mountPath: /tmp
-          name: tmp-vol
+        - name: prometheus-adapter-prometheus-config
+          mountPath: /etc/prometheus-config
+        - name: tmp-vol
+          mountPath: /tmp
       volumes:
       - name: volume-serving-cert
         secret:
@@ -510,6 +543,10 @@ spec:
       - name: config
         configMap:
           name: adapter-config
+      - name: prometheus-adapter-prometheus-config
+        configMap:
+          name: prometheus-adapter-prometheus-config
+          defaultMode: 420
       - name: tmp-vol
         emptyDir: {}
 EOF
@@ -518,11 +555,57 @@ deployment.apps/prometheus-adapter created
 
 ## Problem:
 
-Adapter can't access Prometheus, because user Prometheus is running on 127.0.0.1/9090, so it is not available via the service!
+I0416 14:41:03.620353 1 round_trippers.go:438] GET 
+https://thanos-querier.openshift-monitoring.svc:9092/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total%7Bnamespace%21%3D%22%22%2Cpod%21%3D%22%22%7D&start=1587046863.618
+ 400 Bad Request in 1 milliseconds
+I0416 14:41:03.620379 1 round_trippers.go:444] Response Headers:
+I0416 14:41:03.620390 1 round_trippers.go:447] Content-Type: 
+text/plain; charset=utf-8
+I0416 14:41:03.620399 1 round_trippers.go:447] 
+X-Content-Type-Options: nosniff
+I0416 14:41:03.620407 1 round_trippers.go:447] Content-Length:
+ 56
+I0416 14:41:03.620414 1 round_trippers.go:447] Date: Thu, 16 
+Apr 2020 14:41:03 GMT
+I0416 14:41:03.620432 1 api.go:74] GET 
+https://thanos-querier.openshift-monitoring.svc:9092/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total%7Bnamespace%21%3D%22%22%2Cpod%21%3D%22%22%7D&start=1587046863.618
+ 400 Bad Request
+I0416 14:41:03.620453 1 api.go:93] Response Body: Bad Request. The
+ request or configuration is malformed.
+E0416 14:41:03.620528 1 provider.go:209] unable to update list of 
+all metrics: unable to fetch metrics for query 
+"application_org_example_rbaumgar_GreetingResource_greetings_total{namespace!=\"\",pod!=\"\"}":
+ bad_response: invalid character 'B' looking for beginning of value
+I0416 14:41:05.446248 1 request.go:942] Request Body: 
+{"kind":"SubjectAccessReview","apiVersion":"authorization.k8s.io/v1beta1","metadata":{"creationTimestamp":null},"spec":{"nonResourceAttributes":{"path":"/apis/custom.metrics.k8s.io/v1beta1","verb":"get"},"user":"system:serviceaccount:openshift-cluster-version:default","group":["system:serviceaccounts","system:serviceaccounts:openshift-cluster-version","system:authenticated"]},"status":{"allowed":false}}
+I0416 14:41:05.446413 1 round_trippers.go:419] curl -k -v -XPOST 
+-H "Accept: application/json, */*" -H "Content-Type: application/json" 
+-H "User-Agent: cm-adapter/v0.0.0 (linux/amd64) kubernetes/$Format" -H 
+"Authorization: Bearer 
+eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg"
 
-Changing of the prometheus_url in the stateful_set in openshift_user_workload_monitor doesn't work, because of the operator.
+'https://172.30.0.1:443/apis/authorization.k8s.io/v1beta1/subjectaccessreviews'
+I0416 14:41:05.449325 1 round_trippers.go:438] POST 
+https://172.30.0.1:443/apis/authorization.k8s.io/v1beta1/subjectaccessreviews
+ 201 Created in 2 milliseconds
+I0416 14:41:05.449346 1 round_trippers.go:444] Response Headers:
+I0416 14:41:05.449356 1 round_trippers.go:447] Content-Length:
+ 564
+I0416 14:41:05.449363 1 round_trippers.go:447] Date: Thu, 16 
+Apr 2020 14:41:05 GMT
+I0416 14:41:05.449371 1 round_trippers.go:447] Audit-Id: 
+c71e5f53-2417-4bc7-a724-bd835457af3c
+I0416 14:41:05.449379 1 round_trippers.go:447] Cache-Control: 
+no-cache, private
+I0416 14:41:05.449387 1 round_trippers.go:447] Content-Type: 
+application/json
+I0416 14:41:05.449454 1 request.go:942] Response Body: 
+{"kind":"SubjectAccessReview","apiVersion":"authorization.k8s.io/v1beta1","metadata":{"creationTimestamp":null},"spec":{"nonResourceAttributes":{"path":"/apis/custom.metrics.k8s.io/v1beta1","verb":"get"},"user":"system:serviceaccount:openshift-cluster-version:default","group":["system:serviceaccounts","system:serviceaccounts:openshift-cluster-version","system:authenticated"]},"status":{"allowed":true,"reason":"RBAC:
+ allowed by ClusterRoleBinding \"system:openshift:discovery\" of 
+ClusterRole \"system:openshift:discovery\" to Group 
+\"system:authenticated\""}}
 
-I am not able to find a value in the config map of the openshift_monitoring.
+
 
 ## check custom.metrics
 
@@ -542,7 +625,7 @@ With that all set, your custom metrics API should show up in discovery.
 
 Try fetching the discovery information for it:
 
-```shell
+```
 $ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1
 ```
 
@@ -555,7 +638,7 @@ You can check the value of the metric using `kubectl get --raw`, which
 sends a raw GET request to the Kubernetes API server, automatically
 injecting auth information:
 
-```shell
+```
 $ kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/*/http_requests?selector=app%3Dsample-app"
 ```
 
