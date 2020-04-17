@@ -30,7 +30,7 @@ prometheus-user-workload-0             5/5     Running   6          10h
 prometheus-user-workload-1             5/5     Running   6          10h
 ```
 
-## Create metrics colletion role
+## Create metrics collection role
 
 Create a new role for setting up metrics collection.
 
@@ -86,8 +86,8 @@ Deploying a sample application *monitor-demo-app* end expose a route.
 
 The application is based on an example you will find at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring(APM)](https://github.com/rbaumgar/monitor-demo-app) 
 
-```bash
-cat <<EOF |oc apply -f -
+```shell
+$ cat <<EOF |oc apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -129,7 +129,7 @@ deployment.apps/monitor-demo-app created
 service/monitor-demo-app created
 ```
 
-```bash
+```shell
 $ oc expose svc monitor-demo-app 
 route.route.openshift.io/monitor-demo-app exposed
 ```
@@ -140,9 +140,9 @@ route.route.openshift.io/monitor-demo-app exposed
 
 Check the router url with */hello* and see the hello message and the pod name. Do this multiple times.
 
-```bash
-export URL=$(oc get route monitor-demo-app -o jsonpath='{.spec.host}')
-curl $URL/hello
+```shell
+$ export URL=$(oc get route monitor-demo-app -o jsonpath='{.spec.host}')
+$ curl $URL/hello
 hello from monitor-demo-app monitor-demo-app-78fc685c94-mtm28
 ```
 
@@ -150,8 +150,8 @@ hello from monitor-demo-app monitor-demo-app-78fc685c94-mtm28
 
 See all available metrics */metrics* and only application specific metrics */metrics/application*.
 
-```bash
-curl $URL/metrics/application
+```shell
+$ curl $URL/metrics/application
 # HELP application_org_example_rbaumgar_GreetingResource_greetings_total How many greetings we've given.
 # TYPE application_org_example_rbaumgar_GreetingResource_greetings_total counter
 application_org_example_rbaumgar_GreetingResource_greetings_total 1.0
@@ -167,8 +167,8 @@ application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 
 
 To use the metrics exposed by your service, you need to configure OpenShift Monitoring to scrape metrics from the /metrics endpoint. You can do this using a ServiceMonitor, a custom resource definition (CRD) that specifies how a service should be monitored, or a PodMonitor, a CRD that specifies how a pod should be monitored. The former requires a Service object, while the latter does not, allowing Prometheus to directly scrape metrics from the metrics endpoint exposed by a Pod.
 
-```bash
-cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -216,13 +216,17 @@ Here is an example:
 
 You can generate load onto your application, so will see more on the graph.
 
-> ```bash
-> $ for i in {1..1000}; do curl $URL/hello; sleep 10; done
-> ```
+```shell
+$ for i in {1..1000}; do curl $URL/hello; sleep 10; done
+```
 
-Example: If you want to see the nummer of requests per second (rated in 2 minutes) on the sample service, you can use following query
+Example: If you want to see the number of requests per second (rated in 2 minutes) on the sample service, you can use following query
 
 > sum(rate(application_org_example_rbaumgar_GreetingResource_greetings_total{namespace="monitor-demo"}[2m]))
+
+```
+sum(rate(application_org_example_rbaumgar_GreetingResource_greetings_total{namespace="monitor-demo"}[2m]))
+```
 
 # Exposing custom application metrics for autoscaling
 
@@ -234,8 +238,8 @@ This is based on OpenShift 4.3 Prometheus Adapter. Prometheus Adapter is a Techn
 
 Create a new service account for your Prometheus Adapter in the user namespace.
 
-```bash
-$cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -248,41 +252,41 @@ serviceaccount/custom-metrics-apiserver created
 
 Login again as cluster admin!
 
-> ```bash
-> cat <<EOF | oc apply -f -
-> apiVersion: rbac.authorization.k8s.io/v1
-> kind: ClusterRole
-> metadata:
->   name: custom-metrics-server-resources
-> rules:
-> - apiGroups:
->   - custom.metrics.k8s.io
->   resources: ["*"]
->   verbs: ["*"]
-> ---
-> apiVersion: rbac.authorization.k8s.io/v1
-> kind: ClusterRole
-> metadata:
->   name: custom-metrics-resource-reader
-> rules:
-> - apiGroups:
->   - ""
->   resources:
->   - namespaces
->   - pods
->   - services
->   verbs:
->   - get
->   - list
-> EOF
-> clusterrole.rbac.authorization.k8s.io/custom-metrics-server-resources created
-> clusterrole.rbac.authorization.k8s.io/custom-metrics-resource-reader created
-> ```
+```shell
+$ cat <<EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-server-resources
+rules:
+- apiGroups:
+  - custom.metrics.k8s.io
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-resource-reader
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - pods
+  - services
+  verbs:
+  - get
+  - list
+EOF
+clusterrole.rbac.authorization.k8s.io/custom-metrics-server-resources created
+clusterrole.rbac.authorization.k8s.io/custom-metrics-resource-reader created
+```
 
 Add the newly created (cluster-) role bindings for the service account.
 
-```bash
-cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -330,9 +334,9 @@ clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics creat
 
 :star: If you are using a different namespace, please replace the namespace. (montor-demo)
 
-## You need an additional role, whih is currently not documented
+## You need an additional role, which is currently not documented
 
-```bash
+```shell
 cat <<EOF | oc apply -f -
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -349,7 +353,7 @@ subjects:
 EOF
 ```
 
-```
+```shell
 logging error output: "Internal Server Error: \"/apis/custom.metrics.k8s.io/v1beta1?timeout=32s\": subjectaccessreviews.authorization.k8s.io is forbidden: User \"system:serviceaccount:monitor-demo:custom-metrics-apiserver\" cannot create resource \"subjectaccessreviews\" in API group \"authorization.k8s.io\" at the cluster scope\n"
  [hyperkube/v1.16.2 (linux/amd64) kubernetes/ebf9a26/controller-discovery 10.128.0.1:43004]
 E0414 10:43:35.168164       1 webhook.go:196] Failed to make webhook authorizer request: subjectaccessreviews.authorization.k8s.io is forbidden: User "system:serviceaccount:monitor-demo:custom-metrics-apiserver" cannot create resource "subjectaccessreviews" in API group "authorization.k8s.io" at the cluster scope
@@ -359,8 +363,8 @@ I0414 10:43:35.168323       1 wrap.go:47] GET /apis/custom.metrics.k8s.io/v1beta
 
 ## Create an APIService for the custom metrics for Prometheus Adapter
 
-```bash
-cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 apiVersion: apiregistration.k8s.io/v1beta1
 kind: APIService
 metadata:
@@ -384,7 +388,7 @@ apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io created
 
 Will be required later!
 
-```bash
+```shell
 $ oc get -n openshift-monitoring deploy/prometheus-adapter -o jsonpath="{..image}"
 quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a8e3c383b36684a28453a4f5bb65863167bbeb409b91c9c3f5f50e1d5e923dc9
 ```
@@ -395,7 +399,7 @@ Create Prometheus Adapater
 
 Make sure you stay in the right namespace.
 
-```bash
+```shell
 $ oc login -u developer
 Authentication required for https://api.rbaumgar.demo.net:6443 (openshift)
 Username: developer
@@ -409,8 +413,8 @@ Using project "monitor-demo".
 
 ## Create a config map for the custom metrics for Prometheus Adapter
 
-```bash
-cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -426,7 +430,7 @@ data:
           service: {resource: "service"}
       name:
         matches: "^(.*)_total"
-        as: "${1}_per_second" 
+        as: "my_http_requests" 
       metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[2m])) by (<<.GroupBy>>)'
 EOF
 configmap/adapter-config created
@@ -434,8 +438,8 @@ configmap/adapter-config created
 
 ## Create a service and an APIService for the custom metrics for Prometheus Adapter
 
-```bash
-cat <<EOF | oc apply -f -
+```shell
+$ cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: Service
 metadata:
@@ -458,7 +462,7 @@ service/prometheus-adapter created
 
 ## Create a configmap
 
-```
+```shel
 $ cat <<EOF | oc apply -f -
 kind: ConfigMap
 apiVersion: v1
@@ -490,7 +494,7 @@ data:
 
 :star: Replace the image name with the correct name you got! (spec.template.spec.containers.image)
 
-```
+```shell
 $ cat <<EOF | oc apply -f - 
 apiVersion: apps/v1
 kind: Deployment
@@ -555,6 +559,7 @@ deployment.apps/prometheus-adapter created
 
 ## Problem:
 
+```
 I0416 14:41:03.620353 1 round_trippers.go:438] GET 
 https://thanos-querier.openshift-monitoring.svc:9092/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total%7Bnamespace%21%3D%22%22%2Cpod%21%3D%22%22%7D&start=1587046863.618
  400 Bad Request in 1 milliseconds
@@ -604,13 +609,65 @@ I0416 14:41:05.449454 1 request.go:942] Response Body:
  allowed by ClusterRoleBinding \"system:openshift:discovery\" of 
 ClusterRole \"system:openshift:discovery\" to Group 
 \"system:authenticated\""}}
-
-
+```
 
 ## check custom.metrics
 
-```
-GET /apis/custom-metrics/v1alpha1/namespaces/webapp/metrics/queue-length
+```shell
+# per service
+
+$ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/services/monitor-demo-app/my_http_requests |jq
+{
+  "kind": "MetricValueList",
+  "...
+
+apiVersion": "custom.metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/services/monitor-demo-app/my_http_requests"
+  },
+  "items": [
+    {
+      "describedObject": {
+        "kind": "Service",
+        "namespace": "monitor-demo",
+        "name": "monitor-demo-app",
+        "apiVersion": "/v1"
+      },
+      "metricName": "my_http_requests",
+      "timestamp": "2020-04-17T13:31:28Z",
+      "value": "4044m",
+      "selector": null
+    }
+  ]
+}
+
+# per pod
+$ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods/monitor-demo-app-fd65c7894-krjsp/my_http_requests |jq
+{
+  "kind": "MetricValueList",
+  "apiVersion": "custom.metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods/monitor-demo-app-fd65c7894-krjsp/my_http_requests"
+  },
+  "items": [
+    {
+      "describedObject": {
+        "kind": "Pod",
+        "namespace": "monitor-demo",
+        "name": "monitor-demo-app-fd65c7894-krjsp",
+        "apiVersion": "/v1"
+      },
+      "metricName": "my_http_requests",
+      "timestamp": "2020-04-17T13:27:59Z",
+      "value": "1622m",
+      "selector": null
+    }
+  ]
+}
+
+# for all pods per namespace
+$ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods//my_http_requests |jq
+...
 ```
 
 oc get pod
@@ -625,8 +682,102 @@ With that all set, your custom metrics API should show up in discovery.
 
 Try fetching the discovery information for it:
 
-```
+```shell
 $ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1
+{"kind":"APIResourceList","apiVersion":"v1","groupVersion":"custom.metrics.k8s.io/v1beta1","resources":[{"name":"namespaces/_per_second","singularName":"","namespaced":false,"kind":"MetricValueList","verbs":["get"]},{"name":"pods/_per_second","singularName":"","namespaced":true,"kind":"MetricValueList","verbs":["get"]},{"name":"services/_per_second","singularName":"","namespaced":true,"kind":"MetricValueList","verbs":["get"]}]}
+
+# metrics of all nodes
+$ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/nodes | jq
+{
+  "kind": "NodeMetricsList",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/metrics.k8s.io/v1beta1/nodes"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "ip-10-0-151-251.eu-west-1.compute.internal",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/nodes/ip-10-0-151-251.eu-west-1.compute.internal",
+        "creationTimestamp": "2020-04-17T11:55:31Z"
+      },
+      "timestamp": "2020-04-17T11:55:31Z",
+      "window": "1m0s",
+      "usage": {
+        "cpu": "319m",
+        "memory": "2754196Ki"
+      }
+    },
+...
+
+# metrics of all pods
+$ kubectl get --raw /apis/metrics.k8s.io/v1beta1/pods|jq 
+{
+  "kind": "PodMetricsList",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/metrics.k8s.io/v1beta1/pods"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "ingress-operator-5587c55bf-lmw6s",
+        "namespace": "openshift-ingress-operator",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/openshift-ingress-operator/pods/ingress-operator-5587c55bf-lmw6s",
+        "creationTimestamp": "2020-04-17T11:58:09Z"
+      },
+      "timestamp": "2020-04-17T11:58:08Z",
+      "window": "5m0s",
+      "containers": [
+        {
+          "name": "kube-rbac-proxy",
+          "usage": {
+            "cpu": "0",
+            "memory": "9376Ki"
+          }
+        },
+        {
+          "name": "ingress-operator",
+          "usage": {
+            "cpu": "1m",
+            "memory": "24612Ki"
+          }
+        }
+      ]
+    },
+...
+
+
+# metrics of on pod
+$ kubectl get --raw /apis/metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods|jq
+{
+  "kind": "PodMetricsList",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "monitor-demo-app-fd65c7894-krjsp",
+        "namespace": "monitor-demo",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/monitor-demo/pods/monitor-demo-app-fd65c7894-krjsp",
+        "creationTimestamp": "2020-04-17T12:01:03Z"
+      },
+      "timestamp": "2020-04-17T12:01:03Z",
+      "window": "5m0s",
+      "containers": [
+        {
+          "name": "monitor-demo-app",
+          "usage": {
+            "cpu": "0",
+            "memory": "137364Ki"
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
 Since you've set up Prometheus to collect your app's metrics, you should
@@ -646,3 +797,157 @@ Because of the adapter's configuration, the cumulative metric `http_requests_tot
 interval. The value should currently be close to zero, since there's no
 traffic to your app, except for the regular metrics collection from
 Prometheus.
+
+HPA
+
+```shell
+cat <<EOF | oc apply -f -
+apiVersion: autoscaling/v2beta2 
+kind: HorizontalPodAutoscaler
+metadata:
+  name: http-request-autoscale 
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: monitor-demo-app
+    apiVersion: apps/v1
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Pods
+      pods:
+        metricName: my_http_requests
+      # target 1000 milli-requests per second = 1 req/second 
+        targetAverageValue: '2'
+EOF
+```
+
+Scale up and down works. 
+
+Works takes long!!!
+
+# OK 200 on prometheus-user-workload
+
+```
+sh-4.2$ curl -k -v -XGET -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg" "https://prometheus-user-workload.openshift-user-workload-monitoring:9091/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748&"
+* About to connect() to prometheus-user-workload.openshift-user-workload-monitoring port 9091 (#0)
+*   Trying 172.30.140.221...
+* Connected to prometheus-user-workload.openshift-user-workload-monitoring (172.30.140.221) port 9091 (#0)
+* Initializing NSS with certpath: sql:/etc/pki/nssdb
+* skipping SSL peer certificate verification
+* SSL connection using TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+* Server certificate:
+*     subject: CN=prometheus-user-workload.openshift-user-workload-monitoring.svc
+*     start date: Mar 31 13:40:14 2020 GMT
+*     expire date: Mar 31 13:40:15 2022 GMT
+*     common name: prometheus-user-workload.openshift-user-workload-monitoring.svc
+*     issuer: CN=openshift-service-serving-signer@1585570674
+> GET /api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748& HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: prometheus-user-workload.openshift-user-workload-monitoring:9091
+> Accept: */*
+> Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg
+> 
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Date: Fri, 17 Apr 2020 11:11:38 GMT
+< Content-Length: 278
+< 
+* Connection #0 to host prometheus-user-workload.openshift-user-workload-monitoring left intact
+{"status":"success","data":[{"__name__":"application_org_example_rbaumgar_GreetingResource_greetings_total","endpoint":"web","instance":"10.131.0.4:8080","job":"monitor-demo-app","namespace":"monitor-demo","pod":"monitor-demo-app-fd65c7894-krjsp","service":"monitor-demo-app"}]}
+```
+
+# Error **400 on **thanos-querier:9092** within thanos kube-rbac-proxy
+
+```
+sh-4.2$ curl -k -v -XGET -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg" "https://thanos-querier.openshift-monitoring.svc:9092/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748&"
+* About to connect() to thanos-querier.openshift-monitoring.svc port 9092 (#0)
+*   Trying 172.30.211.229...
+* Connected to thanos-querier.openshift-monitoring.svc (172.30.211.229) port 9092 (#0)
+* Initializing NSS with certpath: sql:/etc/pki/nssdb
+* skipping SSL peer certificate verification
+* SSL connection using TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+* Server certificate:
+*     subject: CN=thanos-querier.openshift-monitoring.svc
+*     start date: Mar 31 13:40:27 2020 GMT
+*     expire date: Mar 31 13:40:28 2022 GMT
+*     common name: thanos-querier.openshift-monitoring.svc
+*     issuer: CN=openshift-service-serving-signer@1585570674
+> GET /api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748& HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: thanos-querier.openshift-monitoring.svc:9092
+> Accept: */*
+> Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg
+> 
+< HTTP/1.1 400 Bad Request
+< Content-Type: text/plain; charset=utf-8
+< X-Content-Type-Options: nosniff
+< Date: Fri, 17 Apr 2020 10:08:16 GMT
+< Content-Length: 56
+< 
+Bad Request. The request or configuration is malformed.
+* Connection #0 to host thanos-querier.openshift-monitoring.svc left intact
+```
+
+### thanos-querier-kube-rbac-proxy
+
+```
+"authorization":
+  "resourceAttributes":
+    "apiVersion": "metrics.k8s.io/v1beta1"
+    "namespace": "{{ .Value }}"
+    "resource": "pods"
+  "rewrites":
+    "byQueryParameter":
+      "name": "namespace"
+```
+
+# Error **400**on **thanos-querier:9091**  within thanos oauth-proxy
+
+```
+sh-4.2$ curl -k -v -XGET -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg" "http://thanos-querier.openshift-monitoring.svc:9091/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748&"
+* About to connect() to thanos-querier.openshift-monitoring.svc port 9091 (#0)
+*   Trying 172.30.211.229...
+* Connected to thanos-querier.openshift-monitoring.svc (172.30.211.229) port 9091 (#0)
+> GET /api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748& HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: thanos-querier.openshift-monitoring.svc:9091
+> Accept: */*
+> Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IlJhQVQwSDNBbTdYRHRPRTdRZkVMbC1IMWZEZE45MDE1d0c5dmhxS2FLZlkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJtb25pdG9yLWRlbW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiY3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyLXRva2VuLXptMmtmIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImN1c3RvbS1tZXRyaWNzLWFwaXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBhN2YzMTQ2LTAzNmYtNDJjYy05NDE4LWJiZmUzZGVmNGUwZCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDptb25pdG9yLWRlbW86Y3VzdG9tLW1ldHJpY3MtYXBpc2VydmVyIn0.RexN6c4kPOzdK3dgE2oJItzxg99E9G5PDEyJ_-sB7MF3yF5fOGfGE9iqw8uIyzz70iAOWenqmgQ0WU84gO5ns6DzAULzuwwFB9xJVb2Np3_wnblJHhKBlFl8RM8xuBXw7WHC9IcWQ_AaSn0L_w-FcjdwGQjFw3YjfTELkJpooXR8X-kg1wW-AUIyY1L3IOWJvS0G2y4FQK2StAPjfk9fhfHhdiMeOjY6BxjBBN3MHK7xKGJn9Y0Ccku4-Tzo4DVVV2C4PVUtAYuq0ttQHC_AKyEQyUNTiyK37J_PMq-ayqiZv_u4OweH-AqpKbCfuRIcj4EkPHJVpA5eksIz5l7Iqg
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 400 Bad Request
+< 
+Client sent an HTTP request to an HTTPS server.
+* Recv failure: Connection reset by peer
+* Closing connection 0
+curl: (56) Recv failure: Connection reset by peer
+```
+
+# OK **200** on **localhost:9090** with thanos
+
+```
+sh-4.2$ curl -k -v -XGET  "http://localhost:9090/api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748&"
+* About to connect() to localhost port 9090 (#0)
+*   Trying ::1...
+* Connection refused
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 9090 (#0)
+> GET /api/v1/series?match%5B%5D=application_org_example_rbaumgar_GreetingResource_greetings_total&start=1587116019.748& HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: localhost:9090
+> Accept: */*
+> 
+< HTTP/1.1 200 OK
+< Access-Control-Allow-Headers: Accept, Accept-Encoding, Authorization, Content-Type, Origin
+< Access-Control-Allow-Methods: GET, OPTIONS
+< Access-Control-Allow-Origin: *
+< Access-Control-Expose-Headers: Date
+< Content-Type: application/json
+< Vary: Accept-Encoding
+< Date: Fri, 17 Apr 2020 10:14:41 GMT
+< Content-Length: 343
+< 
+{"status":"success","data":[{"__name__":"application_org_example_rbaumgar_GreetingResource_greetings_total","endpoint":"web","instance":"10.131.0.4:8080","job":"monitor-demo-app","namespace":"monitor-demo","pod":"monitor-demo-app-fd65c7894-krjsp","prometheus":"openshift-user-workload-monitoring/user-workload","service":"monitor-demo-app"}]}
+* Connection #0 to host localhost left intact
+```
