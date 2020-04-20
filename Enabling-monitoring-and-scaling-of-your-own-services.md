@@ -798,7 +798,7 @@ interval. The value should currently be close to zero, since there's no
 traffic to your app, except for the regular metrics collection from
 Prometheus.
 
-HPA
+# HPA
 
 ```shell
 cat <<EOF | oc apply -f -
