@@ -2,9 +2,9 @@
 
 In this blog I will guide you 
 
-- how to the enable and application performance monitoring(APM)
+- how to the enable an application performance monitoring(APM)
 
-- how to space an user application based on application metrics with a Horizontal Pod Aotoscaler(HPA)
+- how to scale an user application based on application metrics with a Horizontal Pod Aotoscaler(HPA)
 
 For the monitoring I will use the OpenShift Monitoring with a new feature for *monitoring your own services*.
 
