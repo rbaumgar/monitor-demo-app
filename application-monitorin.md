@@ -245,7 +245,7 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 Here is an example:
 
-![](../images/metrics_view.png)
+![](images/metrics_view.png)
 
 You can generate load onto your application, so will see more on the graph.
 
