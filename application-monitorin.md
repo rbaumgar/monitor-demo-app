@@ -1,10 +1,10 @@
-# Enabling Monitoring and Scaling of Your Own Services
+# Enabling Monitoring and Scaling of Your Own Services/Application
 
 In this blog I will guide you 
 
-- how to the enable and application performance monitoring(APM)
+- how to the enable an application performance monitoring(APM)
 
-- how to space an user application based on application metrics with a Horizontal Pod Aotoscaler(HPA)
+- how to scale an user application based on application metrics with a Horizontal Pod Aotoscaler(HPA)
 
 For the monitoring I will use the OpenShift Monitoring with a new feature for *monitoring your own services*.
 
@@ -245,7 +245,7 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 Here is an example:
 
-![](/home/rbaumgar/demo/quarkus/monitor-demo-app/images/metrics_view.png)
+![](images/metrics_view.png)
 
 You can generate load onto your application, so will see more on the graph.
 
