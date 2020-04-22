@@ -13,8 +13,7 @@ public class GreetingResource {
     private String HOSTNAME =
     System.getenv().getOrDefault("HOSTNAME", "unknown");
  
-
-    @Counted(name = "greetings-total", description = "How many greetings we've given.")
+    @Counted(name = "greetings", description = "How many greetings we've given.")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
