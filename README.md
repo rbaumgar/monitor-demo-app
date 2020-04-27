@@ -136,6 +136,12 @@ You need to install Graal VM and set the correct pointer.
 $ export GRAALVM_HOME=~/graalvm-ce-java11-19.3.1/
 $ export JAVA_HOME=$GRAALVM_HOME
 $ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | docker]
+$ ls file target/*-SNAPSHOT-runner
+
+$ target/*-SNAPSHOT-runner
+
+$ ps -o pid,rss,command -p $(pgrep -f runner)
+
 ```
 
 # Run the image
