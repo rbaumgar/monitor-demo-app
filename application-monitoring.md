@@ -162,6 +162,7 @@ service/monitor-demo-app created
 route.route.openshift.io/monitor-demo-app exposed
 ```
 
+!!! note
 :star: It is very important that you define labels at the Deployment and Service. Those will  be referenced later!
 
 ### Test sample application
