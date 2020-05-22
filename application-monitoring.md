@@ -4,11 +4,9 @@
 
 In this blog I will guide you on
 
-<<<<<<< HEAD
+- =======
+
 - How to enable an application performance monitoring (APM).
-=======
-- how to scale an user application based on application metrics with a Horizontal Pod Autoscaler(HPA)
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 - How to scale a user application based on application metrics with a Horizontal Pod Aotoscaler (HPA).
 
@@ -20,11 +18,7 @@ This is based on OpenShift 4.3, which at this time is a Technical Preview. See h
 
 ## Enabling Monitoring of Your Own Services
 
-<<<<<<< HEAD
 A cluster administrator has to enable the User Workload Monitoring once. 
-=======
-As of OpenShift 4.3 this is be done by an update on the configmap within the project *openshift-monitoring*.
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 As of OpenShift 4.3, this is done by an update on the configmap within the project openshift-monitoring.
 
@@ -108,19 +102,11 @@ Using project "monitor-demo".
 
 ### Deploy a Sample Application
 
-<<<<<<< HEAD
 All modern application development frameworks (like Quarkus) supports out-of-the-box metrics features, like Eclipse Microprofile support in Quarkus, [Quarkus - MicroProfile Metrics](https://quarkus.io/guides/microprofile-metrics).
-=======
-All modern application development frameworks (like quarkus) support out of the box metrics features. Like Eclipse Microprofile support in Quarkus, [Quarkus - MicroProfile Metrics](https://quarkus.io/guides/microprofile-metrics)
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring (APM)](https://github.com/rbaumgar/monitor-demo-app). 
 
-<<<<<<< HEAD
 Deploying a sample application monitor-demo-app end expose a route:
-=======
-Deploying a sample application *monitor-demo-app* and exposing a route.
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -414,11 +400,7 @@ subjects:
 EOF
 ```
 
-<<<<<<< HEAD
 :star: If you do not add this role to the service account, you will later get following error in the log of the Prometheus Adapter:
-=======
-:star: If you do not add this role to the service account you will later get the following error in the log of the Prometheus Adapter.
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 ```shell
 logging error output: "Internal Server Error: \"/apis/custom.metrics.k8s.io/v1beta1?timeout=32s\": subjectaccessreviews.authorization.k8s.io is forbidden: User \"system:serviceaccount:monitor-demo:custom-metrics-apiserver\" cannot create resource \"subjectaccessreviews\" in API group \"authorization.k8s.io\" at the cluster scope\n"
@@ -453,11 +435,7 @@ apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io created
 
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo).
 
-<<<<<<< HEAD
 ## Prometheus Adapater for User Metrics
-=======
-## Prometheus Adapter for user metrics
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
 
 ### Show the Prometheus Adapter Image
 
@@ -718,11 +696,7 @@ $ kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/monitor-demo/
 ...
 ```
 
-<<<<<<< HEAD
- Since we have set up Prometheus Adapter to collect the user metrics, we no have *pods/my_http_requests*pods, which measures requests per second over a two minute period.
-=======
- Since we have set up Prometheus Adapter to collect the user metrics, we now have *pods/my_http_requests* pods, which measures requests per second over a 2 minute period.
->>>>>>> 73a38265e27b92d366ad88254b321aeeb13e2aeb
+Since we have set up Prometheus Adapter to collect the user metrics, we no have *pods/my_http_requests*pods, which measures requests per second over a two minute period.
 
 ## Create Horizontal Pod Autoscaler
 
@@ -816,8 +790,6 @@ If scale down takes longer than expected, this Kubernetes documentation explains
 The dynamic nature of the metrics being evaluated by the HPA may at times lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay) where the number of replicas fluctuates frequently and is not desirable. 
 
 To get around this and specify a cool down period, a best practice is to configure the `--horizontal-pod-autoscaler-downscale-stabilization` flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
-
-
 
 This document: 
 
