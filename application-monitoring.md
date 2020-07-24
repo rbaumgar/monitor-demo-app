@@ -1,10 +1,8 @@
 # Enabling Monitoring and Scaling of Your Own Services/Application
 
-*By Robert Baumgartner, Red Hat Austria, April 2020*
+*By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5)*
 
 In this blog I will guide you on
-
-- =======
 
 - How to enable an application performance monitoring (APM).
 
@@ -14,18 +12,18 @@ For the monitoring, I will use the OpenShift Monitoring with a new feature for m
 
 You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
 
-This is based on OpenShift 4.3, which at this time is a Technical Preview. See https://docs.openshift.com/container-platform/4.3/monitoring/monitoring-your-own-services.html.
+This is based on OpenShift 4.5, which at this time is a Technical Preview. See [Monitoring your own services | Monitoring | OpenShift Container Platform 4.5](https://docs.openshift.com/container-platform/4.5/monitoring/monitoring-your-own-services.html).
 
 ## Enabling Monitoring of Your Own Services
 
 A cluster administrator has to enable the User Workload Monitoring once. 
 
-As of OpenShift 4.3, this is done by an update on the configmap within the project openshift-monitoring.
+As of OpenShift 4.5, this is done by an update on the configmap within the project openshift-monitoring.
 
 Make sure you are logged in as cluster-admin:
 
 ```shell
-cat <<EOF | oc apply -f -
+$ cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -40,15 +38,21 @@ EOF
 
 After a short time, you can check that the prometheus-user-workload pods were created and running:
 
-```bash
-oc get pod -n openshift-user-workload-monitoring 
+```shell
+$ oc get pod -n openshift-user-workload-monitoring 
 NAME                                   READY   STATUS    RESTARTS   AGE
-prometheus-operator-7bcc9cc899-p8cbr   1/1     Running   1          10h
-prometheus-user-workload-0             5/5     Running   6          10h
-prometheus-user-workload-1             5/5     Running   6          10h
+prometheus-operator-7bcc9cc899-p8cbr   1/1     Running   0          10h
+prometheus-user-workload-0             5/5     Running   1          10h
+prometheus-user-workload-1             5/5     Running   1          10h
+thanos-ruler-user-workload-0           3/3     Running   0          10h
+thanos-ruler-user-workload-1           3/3     Running   0          10h
 ```
 
+The thanos-ruler-user-workload pods are not available in OpenShift 4.3.
+
 ## Create Metrics Collection Role
+
+This role is no longer needed in OpenShift 4.5! Only needed in OpenShift 4.3/4.4.
 
 Create a new role for setting up metrics collection:
 
@@ -80,9 +84,11 @@ to build a new example application in Python. Or use kubectl to deploy a simple 
     kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
 $ oc policy add-role-to-user admin developer -n monitor-demo 
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
-$ oc policy add-role-to-user monitor-crd-edit developer -n monitor-demo 
-clusterrole.rbac.authorization.k8s.io/monitor-crd-edit added: "developer"
+$ oc policy add-role-to-user monitoring-edit developer -n monitor-demo 
+clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
+
+In OpenShift 4.3/4.4 the role monitor-crd-edit has to be assigned to the user developer!
 
 ## Login as the Normal User
 
@@ -241,7 +247,9 @@ Once you have enabled monitoring your own services, deployed a service, and set 
      
      :star: Only cluster administrators have access to the Alertmanager and Prometheus UIs.
    
-   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Advanced** → **Metrics**. Select the project you want to see the metrics for.
+   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Metrics**. In OpenShift 4.3 click on 
+     
+     **Advanced → Metrics**.
      
      :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
@@ -249,7 +257,7 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 Here is an example:
 
-![](images/metrics_view.png)
+![kus/monitor-demo-app/images/metrics_view.png)](/home/rbaumgar/demo/quarkus/monitor-demo-app/images/metrics_view.png)
 
 You can generate load onto your application, and so will see more on the graph.
 
@@ -277,7 +285,7 @@ You can export application metrics for the Horizontal Pod Autoscaler (HPA).
 
 The following steps are based on OpenShift 4.3 Prometheus Adapter: 
 
-Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring | OpenShift Container Platform 4.3](https://docs.openshift.com/container-platform/4.3/monitoring/exposing-custom-application-metrics-for-autoscaling.html)
+Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring | OpenShift Container Platform 4.5](https://docs.openshift.com/container-platform/4.5/monitoring/exposing-custom-application-metrics-for-autoscaling.html).
 
 ### Create Service Account
 
@@ -335,6 +343,19 @@ Add the newly created cluster-role bindings for the service account (custom-metr
 ```shell
 $ cat <<EOF | oc apply -f -
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: custom-metrics:system:auth-delegator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: custom-metrics-apiserver
+  namespace: monitor-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: custom-metrics-auth-reader
@@ -374,6 +395,7 @@ subjects:
   name: horizontal-pod-autoscaler
   namespace: kube-system
 EOF
+clusterrolebinding.rbac.authorization.k8s.io/custom-metrics:system:auth-delegator created
 rolebinding.rbac.authorization.k8s.io/custom-metrics-auth-reader created
 clusterrolebinding.rbac.authorization.k8s.io/custom-metrics-resource-reader created
 clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics created
@@ -381,34 +403,7 @@ clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics creat
 
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo).
 
-You need an additional role, which is currently not documented:
-
-```shell
-cat <<EOF | oc apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: custom-metrics:system:auth-delegator
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:auth-delegator
-subjects:
-- kind: ServiceAccount
-  name: custom-metrics-apiserver
-  namespace: monitor-demo
-EOF
-```
-
-:star: If you do not add this role to the service account, you will later get following error in the log of the Prometheus Adapter:
-
-```shell
-logging error output: "Internal Server Error: \"/apis/custom.metrics.k8s.io/v1beta1?timeout=32s\": subjectaccessreviews.authorization.k8s.io is forbidden: User \"system:serviceaccount:monitor-demo:custom-metrics-apiserver\" cannot create resource \"subjectaccessreviews\" in API group \"authorization.k8s.io\" at the cluster scope\n"
- [hyperkube/v1.16.2 (linux/amd64) kubernetes/ebf9a26/controller-discovery 10.128.0.1:43004]
-E0414 10:43:35.168164       1 webhook.go:196] Failed to make webhook authorizer request: subjectaccessreviews.authorization.k8s.io is forbidden: User "system:serviceaccount:monitor-demo:custom-metrics-apiserver" cannot create resource "subjectaccessreviews" in API group "authorization.k8s.io" at the cluster scope
-E0414 10:43:35.168288       1 errors.go:77] subjectaccessreviews.authorization.k8s.io is forbidden: User "system:serviceaccount:monitor-demo:custom-metrics-apiserver" cannot create resource "subjectaccessreviews" in API group "authorization.k8s.io" at the cluster scope
-I0414 10:43:35.168323       1 wrap.go:47] GET /apis/custom.metrics.k8s.io/v1beta1?timeout=32s: (1.963244ms) 500
-```
+Clusterrole custom-metrics:system:auth-delegator was not documented in OpenShift 4.3.
 
 ### Create an APIService
 
@@ -475,7 +470,7 @@ metadata:
 data:
   config.yaml: |
     rules:
-    - seriesQuery: ''application_org_example_rbaumgar_GreetingResource_greetings_total' {namespace!="",pod!=""}' 
+    - seriesQuery: 'application_org_example_rbaumgar_GreetingResource_greetings_total {namespace!="",pod!=""}' 
       resources:
         overrides:
           namespace: {resource: "namespace"}
@@ -549,6 +544,8 @@ data:
     - name: prometheus-k8s
       user:
         tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+EOF
+configmap/prometheus-adapter-prometheus-config created
 ```
 
 ## Configuration for Deploying the Prometheus Adapter
@@ -703,7 +700,7 @@ Since we have set up Prometheus Adapter to collect the user metrics, we no have 
 Now we are at the last step of the setup. Create a Horizontal Pod Autoscaler (HPA) to scale the sample application depended on the load, scaled by the user metrics *my_http_requests*. 
 
 ```shell
-cat <<EOF | oc apply -f -
+$ cat <<EOF | oc apply -f -
 apiVersion: autoscaling/v2beta2 
 kind: HorizontalPodAutoscaler
 metadata:
@@ -718,10 +715,14 @@ spec:
   metrics:
     - type: Pods
       pods:
-        metricName: my_http_requests
-      # target 1000 milli-requests per second = 1 req/second 
-        targetAverageValue: '1'
+        metric:
+          name: my_http_requests
+        target:
+          type: AverageValue
+          # target 1000 milli-requests per second = 1 req/second 
+          averageValue: 1
 EOF
+horizontalpodautoscaler.autoscaling/monitor-demo-hpa created
 ```
 
 Now it is time do the final test!
