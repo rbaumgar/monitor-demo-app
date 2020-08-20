@@ -792,6 +792,24 @@ The dynamic nature of the metrics being evaluated by the HPA may at times lead t
 
 To get around this and specify a cool down period, a best practice is to configure the `--horizontal-pod-autoscaler-downscale-stabilization` flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
 
+## Remove this Demo
+
+```shell
+$ oc delete deployment.apps/prometheus-adapter
+$ oc delete apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io
+$ oc delete clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics
+$ oc delete clusterrolebinding.rbac.authorization.k8s.io/custom-metrics-resource-reader
+$ oc delete rolebinding.rbac.authorization.k8s.io/custom-metrics-auth-reader
+$ oc delete clusterrolebinding.rbac.authorization.k8s.io/custom-metrics:system:auth-delegator
+$ oc delete clusterrole.rbac.authorization.k8s.io/custom-metrics-resource-reader
+$ oc delete clusterrole.rbac.authorization.k8s.io/custom-metrics-server-resources
+$ oc delete servicemonitor.monitoring.coreos.com/monitor-demo-monitor 
+$ oc delete ClusterRole/monitor-crd-edit
+$ oc edit configmap/cluster-monitoring-config -n openshift-monitoring
+$ oc get pod -n openshift-user-workload-monitoring
+$ oc delete project monitor-demo
+```
+
 This document: 
 
 **[monitor-demo-app/application-monitoring.md at master · rbaumgar/monitor-demo-app · GitHub](https://github.com/rbaumgar/monitor-demo-app/blob/master/application-monitoring.md)**
