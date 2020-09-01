@@ -36,6 +36,24 @@ data:
 EOF
 ```
 
+If needed some more Prometheus parameters can be added to the configmap like the following:
+
+```shell
+...
+    techPreviewUserWorkload:
+      enabled: true
+    prometheusUserWorkload:
+      retention: 24h
+      volumeClaimTemplate:
+        metadata:
+          name: prometheus
+        spec:
+          storageClassName: thin
+          resources:
+            requests:
+              storage: 20Gi
+```
+
 After a short time, you can check that the prometheus-user-workload pods were created and running:
 
 ```shell
@@ -163,7 +181,7 @@ spec:
   path: /
   to:
     kind: Service
-    name: moitor-demo-app
+    name: monitor-demo-app
   port:
     targetPort: web
 EOF
