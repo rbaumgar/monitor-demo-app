@@ -52,7 +52,7 @@ $ curl localhost:8080/prime/6578394797
 You will get the metrics by */metrics*, */metrics/application*, */metrics/vendor* or */metrics/base*. E.g.
 
 ```shell
-$ curl -H"Accept: application/json" localhost:8080/metrics/application
+$ curl -H "Accept: application/json" -L localhost:8080/metrics/application
 
 {
     "org.example.rbaumgar.PrimeNumberChecker.performedChecks": 5,
@@ -73,9 +73,12 @@ $ curl -H"Accept: application/json" localhost:8080/metrics/application
         "count": 5,
         "oneMinRate": 0.006104575965485283
     },
-    "org.example.rbaumgar.GreetingResource.greetings-total": 1,
+    "greetings": 1,
     "org.example.rbaumgar.PrimeNumberChecker.highestPrimeNumberSoFar": 6578394793
-$ curl localhost:8080/metrics/applications
+$ curl -L localhost:8080/metrics/applications
+# HELP application_greetings_total How many greetings we've given.
+# TYPE application_greetings_total counter
+application_greetings_total 1.0
 # TYPE application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second gauge
 application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 0.008020888995483285
 # TYPE application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_one_min_rate_per_second gauge
@@ -107,12 +110,10 @@ application_org_example_rbaumgar_PrimeNumberChecker_highestPrimeNumberSoFar 6.57
 # HELP application_org_example_rbaumgar_PrimeNumberChecker_performedChecks_total How many primality checks have been performed.
 # TYPE application_org_example_rbaumgar_PrimeNumberChecker_performedChecks_total counter
 application_org_example_rbaumgar_PrimeNumberChecker_performedChecks_total 5.0
-# HELP application_org_example_rbaumgar_GreetingResource_greetings_total How many greetings we've given.
-# TYPE application_org_example_rbaumgar_GreetingResource_greetings_total counter
-application_org_example_rbaumgar_GreetingResource_greetings_total 1.0
+
 ```
 
-So the number of API calls to *hello* is **application_org_example_rbaumgar_GreetingResource_greetings_total**.
+So the number of API calls to *hello* is **greetings**.
 
 # Build an image with podman
 
@@ -140,7 +141,7 @@ $ ls file target/monitor-demo-app-1.0-SNAPSHOT-runner
 
 $ target/monitor-demo-app-1.0-SNAPSHOT-runner
 
-$ ps -o pid,rss,command -p $(pgrep -f runner)
+$ 
 
 ```
 
