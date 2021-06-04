@@ -2,7 +2,7 @@ package org.example.rbaumgar;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 
-import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
+//import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

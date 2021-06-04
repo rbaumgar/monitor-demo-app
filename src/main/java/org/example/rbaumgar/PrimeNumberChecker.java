@@ -41,7 +41,7 @@ public class PrimeNumberChecker {
         if (number > highestPrimeNumberSoFar) {
             highestPrimeNumberSoFar = number;
         }
-        return number + " is prime.";
+        return number + " is prime.\n";
     }
 
     @Gauge(name = "highestPrimeNumberSoFar", unit = MetricUnits.NONE, description = "Highest prime number so far.")

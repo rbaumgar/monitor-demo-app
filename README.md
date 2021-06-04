@@ -133,7 +133,7 @@ You can also use *docker*.
 You need to install Graal VM and set the correct pointer.
 
 ```shell
-$ export GRAALVM_HOME=~/graalvm-ce-java11-19.3.1/
+$ export GRAALVM_HOME=~/graalvm-ce-java11-21.1.0/
 $ export JAVA_HOME=$GRAALVM_HOME
 $ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | docker]
 $ ls file target/monitor-demo-app-1.0-SNAPSHOT-runner
@@ -145,7 +145,7 @@ $ ps -o pid,rss,command -p $(pgrep -f runner)
 ```
 
 ```
-$ oc new-build quay.io/quarkus/ubi-quarkus-native-binary-s2i:19.3.1 --binary --name=monitor-demo -l app=monitor-demo
+$ oc new-build quay.io/quarkus/ubi-quarkus-native-binary-s2i:21.1.0 --binary --name=monitor-demo -l app=monitor-demo
 
 This build uses the new Red Hat Universal Base Image, providing foundational software needed to run most applications, while staying at a reasonable size.
 
@@ -181,4 +181,15 @@ $ podman images localhost/quarkus/monitor-demo-app-jvm
 REPOSITORY                               TAG      IMAGE ID       CREATED      SIZE
 localhost/quarkus/monitor-demo-app-jvm   latest   0a68fa7e569f   2 days ago   108 MB
 $ podman push `podman images localhost/quarkus/monitor-demo-app-jvm-q` docker://quay.io/rbaumgar/monitor-demo-app-jvm
+```
+
+# Test prime
+
+```
+while [ true ] ; do
+        BITS=$(( ( RANDOM % 60 )  + 1 ))
+        NUM=$(openssl prime -generate -bits $BITS)
+        curl http://localhost:8080/prime/${NUM}
+        sleep 2
+done
 ```
