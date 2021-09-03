@@ -181,7 +181,7 @@ Find the *image id* and push it. You might need to login at first.
 $ podman images localhost/quarkus/monitor-demo-app-jvm
 REPOSITORY                               TAG      IMAGE ID       CREATED      SIZE
 localhost/quarkus/monitor-demo-app-jvm   latest   0a68fa7e569f   2 days ago   108 MB
-$ podman push `podman images localhost/quarkus/monitor-demo-app-jvm-q` docker://quay.io/rbaumgar/monitor-demo-app-jvm
+$ podman push `podman images localhost/quarkus/monitor-demo-app-jvm -q` docker://quay.io/rbaumgar/monitor-demo-app-jvm
 ```
 
 # Test prime
