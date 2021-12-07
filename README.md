@@ -146,7 +146,7 @@ $
 ```
 
 ```
-$ oc new-build quay.io/quarkus/ubi-quarkus-native-binary-s2i:21.1.0 --binary --name=monitor-demo -l app=monitor-demo
+$ oc new-build quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0 --binary --name=monitor-demo -l app=monitor-demo
 
 This build uses the new Red Hat Universal Base Image, providing foundational software needed to run most applications, while staying at a reasonable size.
 
