@@ -15,7 +15,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)
-             .body(is("hello from monitor-demo-app unknown"));
+             .body(is("Hello from monitor-demo-app rbaumgar.remote.csb"));
     }
 
 }

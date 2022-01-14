@@ -1,6 +1,6 @@
 # Enabling Monitoring and Scaling of Your Own Services/Application
 
-*By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5)*
+*By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5), update Janurary 2022 (OpenShift 4.9)*
 
 In this blog I will guide you on
 
@@ -14,7 +14,9 @@ You can use OpenShift Monitoring for your own services in addition to monitoring
 
 This is based on OpenShift 4.5, which at this time is a Technical Preview. See [Monitoring your own services | Monitoring | OpenShift Container Platform 4.5](https://docs.openshift.com/container-platform/4.5/monitoring/monitoring-your-own-services.html).
 
-## Enabling Monitoring of Your Own Services
+In OpenShift version 4.6+ it is GA. See [Enabling monitoring for user-defined projects](https://docs.openshift.com/container-platform/4.9/monitoring/enabling-monitoring-for-user-defined-projects.html)
+
+## Enabling Monitoring of Your Own Services in OpenShift 4.5
 
 A cluster administrator has to enable the User Workload Monitoring once. 
 
@@ -54,6 +56,27 @@ If needed some more Prometheus parameters can be added to the configmap like the
               storage: 20Gi
 ```
 
+## Enabling Monitoring of Your Own Services in OpenShift 4.6+
+
+As of OpenShift 4.6+, this is done by an update on the configmap within the project openshift-monitoring.
+
+Make sure you are logged in as cluster-admin:
+
+```shell
+$ cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+EOF
+```
+
+## Check User Worload Monitoring
+
 After a short time, you can check that the prometheus-user-workload pods were created and running:
 
 ```shell
@@ -64,27 +87,6 @@ prometheus-user-workload-0             5/5     Running   1          10h
 prometheus-user-workload-1             5/5     Running   1          10h
 thanos-ruler-user-workload-0           3/3     Running   0          10h
 thanos-ruler-user-workload-1           3/3     Running   0          10h
-```
-
-The thanos-ruler-user-workload pods are not available in OpenShift 4.3.
-
-## Create Metrics Collection Role
-
-This role is no longer needed in OpenShift 4.5! Only needed in OpenShift 4.3/4.4.
-
-Create a new role for setting up metrics collection:
-
-```shell
-$ cat <<EOF | oc apply -f -
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
- name: monitor-crd-edit
-rules:
-- apiGroups: ["monitoring.coreos.com"]
-  resources: ["prometheusrules", "servicemonitors", "podmonitors"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-EOF
 ```
 
 ## Create a New Project
@@ -99,14 +101,13 @@ You can add applications to this project with the 'new-app' command. For example
 
 to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
 
-    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+    kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
+    
 $ oc policy add-role-to-user admin developer -n monitor-demo 
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
 $ oc policy add-role-to-user monitoring-edit developer -n monitor-demo 
 clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
-
-In OpenShift 4.3/4.4 the role monitor-crd-edit has to be assigned to the user developer!
 
 ## Login as the Normal User
 
@@ -207,20 +208,26 @@ hello from monitor-demo-app monitor-demo-app-78fc685c94-mtm28
 
 ### Check Available Metrics
 
-See all available metrics */metrics* and only application specific metrics */metrics/application*:
+See all available metrics */q/metrics* and only application specific metrics */q/metrics/application*:
 
 ```shell
 $ curl $URL/metrics/application
-# HELP application_org_example_rbaumgar_GreetingResource_greetings_total How many greetings we've given.
-# TYPE application_org_example_rbaumgar_GreetingResource_greetings_total counter
-application_org_example_rbaumgar_GreetingResource_greetings_total 2.0
+# HELP application_greetings_total How many greetings we've given.
+# TYPE application_greetings_total counter
+application_greetings_total 3.0
+# HELP application_greetings_2xx_total How many 2xx we've given.
+# TYPE application_greetings_2xx_total counter
+application_greetings_2xx_total 0.0
+# HELP application_greetings_5xx_total How many 5xx we've given.
+# TYPE application_greetings_5xx_total counter
+application_greetings_5xx_total 0.0
 # TYPE application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second gauge
 application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 0.0
 # TYPE application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_one_min_rate_per_second gauge
 ...
 ```
 
- With *application_org_example_rbaumgar_GreetingResource_greetings_total*, you will see how often you have called the */hello* url. Later we will use this metric.
+ With *application_greetings_total*, you will see how often you have called the */hello* url. Later we will use this metric.
 
 ## Setting up Metrics Collection
 
@@ -239,6 +246,7 @@ spec:
   - interval: 30s
     port: web
     scheme: http
+    path: /q/metrics
   selector:
     matchLabels:
       app: monitor-demo-app
@@ -249,7 +257,9 @@ NAME                   AGE
 monitor-demo-monitor   42s
 ```
 
-If you are not able to create the *ServiceMonitor*, you do not have the role *montitor-crd-edit*.
+:star: For Quarkus application the dafault path for metrics is */q/metrics*, so you have to specify it!
+
+If you are not able to create the *ServiceMonitor*, you do not have the role *montitoring-rules-edit*.
 
 :star: The *matchLabels* must be the same as you defined at the Deployment and Service!
 
@@ -259,15 +269,13 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 1. Access the Prometheus web interface:
    
-   - To access the metrics as a cluster administrator, go to the OpenShift Container Platform web console, switch to the Administrator Perspective, and click **Monitoring** → **Metrics**.
+   - To access the metrics as a cluster administrator, go to the OpenShift Container Platform web console, switch to the Administrator Perspective, and click **Observer → Metrics** (openshift 4.8+) or  **Monitoring → Metrics**.
      
      :star: Cluster administrators, when using the Administrator Perspective, have access to all cluster metrics and to custom service metrics from all projects.
      
      :star: Only cluster administrators have access to the Alertmanager and Prometheus UIs.
    
-   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Metrics**. In OpenShift 4.3 click on 
-     
-     **Advanced → Metrics**.
+   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**. In OpenShift 4.3 click on **Advanced → Metrics**.
      
      :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
@@ -275,7 +283,7 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 Here is an example:
 
-![metrics_view.png)](images/metrics_view.png)
+![metrics_view.png)](images/metrics_view49.png)
 
 You can generate load onto your application, and so will see more on the graph.
 
@@ -285,10 +293,10 @@ $ for i in {1..1000}; do curl $URL/hello; sleep 10; done
 
 PromQL Example: If you want to see the number of requests per second (rated in two minutes) on the sample service, you can use following query:
 
-> sum(rate(application_org_example_rbaumgar_GreetingResource_greetings_total{namespace="monitor-demo"}[2m]))
+> sum(rate(application_greetings_total{namespace="monitor-demo"}[2m]))
 
 ```
-sum(rate(application_org_example_rbaumgar_GreetingResource_greetings_total{namespace="monitor-demo"}[2m]))
+sum(rate(application_greetings_total{namespace="monitor-demo"}[2m]))
 ```
 
 You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
@@ -301,9 +309,7 @@ If you are just interested in exposing application metrics to the dashboard, you
 
 You can export application metrics for the Horizontal Pod Autoscaler (HPA).
 
-The following steps are based on OpenShift 4.3 Prometheus Adapter: 
-
-Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring | OpenShift Container Platform 4.5](https://docs.openshift.com/container-platform/4.5/monitoring/exposing-custom-application-metrics-for-autoscaling.html).
+Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring](https://docs.openshift.com/container-platform/4.6/monitoring/exposing-custom-application-metrics-for-autoscaling.html).
 
 ### Create Service Account
 
@@ -421,8 +427,6 @@ clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics creat
 
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo).
 
-Clusterrole custom-metrics:system:auth-delegator was not documented in OpenShift 4.3.
-
 ### Create an APIService
 
 Create an APIService for the custom metrics for Prometheus Adapter:
@@ -488,7 +492,7 @@ metadata:
 data:
   config.yaml: |
     rules:
-    - seriesQuery: 'application_org_example_rbaumgar_GreetingResource_greetings_total {namespace!="",pod!=""}' 
+    - seriesQuery: 'application_greetings_total {namespace!="",pod!=""}' 
       resources:
         overrides:
           namespace: {resource: "namespace"}
