@@ -450,6 +450,8 @@ EOF
 apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io created
 ```
 
+In OpenShift 4.9 you have to specifiy apiregistration.k8s.io/v1!
+
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo).
 
 ## Prometheus Adapater for User Metrics
@@ -540,7 +542,7 @@ service/prometheus-adapter created
 
 Create a ConfigMap for the prometheus-config.yaml for the Prometheus Adapter with *insecure-skip-tls-verify: true* 
 
-```shel
+```shell
 $ cat <<EOF | oc apply -f -
 kind: ConfigMap
 apiVersion: v1
@@ -596,7 +598,7 @@ spec:
       serviceAccountName: custom-metrics-apiserver
       containers:
       - name: prometheus-adapter
-        image: openshift-release-dev/ocp-v4.3-art-dev 
+        image: openshift-release-dev/ocp-v4.6-art-dev 
         args:
         - --prometheus-auth-config=/etc/prometheus-config/prometheus-config.yaml
         - --secure-port=6443
@@ -654,6 +656,8 @@ I0417 13:23:31.836631       1 secure_serving.go:116] Serving securely on [::]:64
 I0417 13:23:32.030695       1 wrap.go:47] GET /apis/custom.metrics.k8s.io/v1beta1: (467.349µs) 200 [Go-http-client/2.0 10.129.0.1:40778]
 ...
 ```
+
+:star: In OpenShift 4.9 you have to change the prometheus-url to "https://thanos-querier.openshift-monitoring:9091'" otherwise the Prometheus adapter get a 404 on "/api/v1/series?match[]...". (Prometheus API does not work)
 
 ## Check Custom Metrics
 
