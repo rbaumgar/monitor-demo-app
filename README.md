@@ -13,16 +13,17 @@ $ mvn quarkus:dev
 [INFO] Scanning for projects...
 [INFO] 
 [INFO] --------------------< org.example:monitor-demo-app >--------------------
-[INFO] Building monitor-demo-app 1.0-SNAPSHOT
+[INFO] Building monitor-demo-app 1.1-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO] 
-[INFO] --- quarkus-maven-plugin:1.0.0.CR1:dev (default-cli) @ monitor-demo-app ---
 Listening for transport dt_socket at address: 5005
-2020-04-17 10:16:51,896 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
-2020-04-17 10:16:52,504 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 608ms
-2020-04-17 10:16:52,733 INFO  [io.quarkus] (main) Quarkus 1.0.0.CR1 started in 0.924s. Listening on: http://0.0.0.0:8080
-2020-04-17 10:16:52,734 INFO  [io.quarkus] (main) Profile dev activated. Live Coding activated.
-2020-04-17 10:16:52,734 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, smallrye-metrics]
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
+2022-01-18 13:32:31,110 INFO  [io.quarkus] (Quarkus Main Thread) monitor-demo-app-micro 1.1-SNAPSHOT on JVM (powered by Quarkus 2.6.2.Final) started in 1.481s. Listening on: http://localhost:8080
+
+2022-01-18 13:32:31,112 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+2022-01-18 13:32:31,113 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, resteasy, smallrye-context-propagation, smallrye-metrics, vertx]
 ```
 
 and from an other window
@@ -30,6 +31,12 @@ and from an other window
 ```shell
 $ curl localhost:8080/hello
 hello from monitor-demo-app unknown
+$ curl localhost:8080/hello/2xx
+Got 2xx Response
+$ curl localhost:8080/hello/5xx
+Got 5xx Response
+$ curl -X POST localhost:8080/hello/alert-hook -H 'content-type: application/json' -d '{ "records": [ {"key": "key-1","value": "sales-lead-0003"}, {"key": "key-2","value": "sales-lead-0003"} ] }'
+OK
 ```
 
 *unknown* is because of running outside of a container. Running in a container *unknown* will be the container name.

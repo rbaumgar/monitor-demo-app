@@ -191,6 +191,8 @@ service/monitor-demo-app created
 route.route.openshift.io/monitor-demo-app exposed
 ```
 
+If you want to use the Quarkus native image change the image name in the deployment to *monitor-demo-app-native*.
+
 :star: It is very important that you define labels at the Deployment and Service. Those will  be referenced later!
 
 ### Test Sample Application
