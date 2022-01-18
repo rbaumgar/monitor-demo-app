@@ -899,6 +899,8 @@ To change the Alertmanager configuration from the OpenShift Container Platform w
 
 Navigate to the **Administration → Cluster Settings → Global Configuration → Alertmanager** of the web console. Create a Receiver.
 
+![EditWebhook.png)](images/EditWebhook.png)
+
 More Details [Sending notifications to external systems](https://docs.openshift.com/container-platform/4.6/monitoring/managing-alerts.html#sending-notifications-to-external-systems_managing-alerts)
 
 ### Test Alert
