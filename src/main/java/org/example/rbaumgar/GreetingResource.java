@@ -2,6 +2,8 @@ package org.example.rbaumgar;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 
+import io.quarkus.logging.Log;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -28,6 +30,7 @@ public class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Counted(name = "greetings.2xx", description = "How many 2xx we've given.", absolute = true)
     public String simulate2xxResponse() {
+        Log.info("2xx received");
         return "Got 2xx Response";
     }
 
@@ -36,14 +39,15 @@ public class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
 	@Counted(name = "greetings.5xx", description = "How many 5xx we've given.", absolute = true)
 	public String simulate5xxResponse() {
+        Log.info("5xx received");
         return "Got 5xx Response";
     }
 
     @Path("alert-hook")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Counted(name = "alters", description = "How many alters we've recsived.", absolute = true)@POST
+    @Counted(name = "alerts", description = "How many alters we've received.", absolute = true)@POST
 	public String receiveAlertHook(String request) {
-		System.out.println("Alert received: " + request);
+		Log.info("Alert received: " + request);
         return "OK";
     }
 

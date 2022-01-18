@@ -1,4 +1,4 @@
-# Enabling Monitoring and Scaling of Your Own Services/Application
+# Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems
 
 *By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5), update Janurary 2022 (OpenShift 4.9)*
 
@@ -102,7 +102,7 @@ You can add applications to this project with the 'new-app' command. For example
 to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
-    
+
 $ oc policy add-role-to-user admin developer -n monitor-demo 
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
 $ oc policy add-role-to-user monitoring-edit developer -n monitor-demo 
@@ -454,7 +454,7 @@ In OpenShift 4.9 you have to specifiy apiregistration.k8s.io/v1!
 
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo).
 
-## Prometheus Adapater for User Metrics
+## Prometheus Adapter for User Metrics
 
 ### Show the Prometheus Adapter Image
 
@@ -808,7 +808,7 @@ Congratulations!
 
 Oh, one more thing ...
 
-## Scale Down
+### Scale Down
 
 If scale down takes longer than expected, this Kubernetes documentation explains why
 
@@ -818,9 +818,201 @@ The dynamic nature of the metrics being evaluated by the HPA may at times lead t
 
 To get around this and specify a cool down period, a best practice is to configure the `--horizontal-pod-autoscaler-downscale-stabilization` flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
 
+## Alert Rules
+
+### Create Alert Rule
+
+```shell
+$ cat <<EOF | oc apply -f -
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: example-500-alert
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+spec:
+  groups:
+    - name: example
+      rules:
+        - alert: Error500Alert
+          expr: >-
+            increase(application_greetings_5xx_total{job="monitor-demo-app"}         [1m]) > 2
+EOF
+prometheusrules.monitoring.coreos.com/example-500-alert created
+```
+
+This configuration creates an alerting rule named example-500-alert. The alerting rule fires an alert when the counter of 5xx requests increases by more the 2 in one minute.
+
+If that label (leaf-prometheus) is present, the alerting rule is deployed on the Prometheus instance in the openshift-user-workload-monitoring project. If the label is not present, the alerting rule is deployed to Thanos Ruler.
+
+The cluster-admin can view all alert rules in the Administrator perspective, navigate to **Monitoring → Alerting → Alerting Rules**.
+
+The user can view the rules of one project in the Developer perspective, navigate to **Monitoring → Alerts page** in the OpenShift Container Platform web console.
+
+## Sending Alerts to External Systems
+
+In OpenShift Container Platform 4.6, firing alerts can be viewed in the Alerting UI. Alerts are not configured by default to be sent to any notification systems. You can configure OpenShift Container Platform to send alerts to the following receiver types:
+
+- PagerDuty
+- Webhook
+- Email
+- Slack
+
+In this demo we will send the alert to our sample application (webhook)
+
+### Configuring alert receivers
+
+You can configure alert receivers as a user with the cluster-admin role.
+
+1. Print the currently active Alertmanager configuration into file alertmanager.yaml:
+
+```shell
+$ oc -n openshift-monitoring get secret alertmanager-main --template='{{ index .data "alertmanager.yaml" }}' | base64 --decode > alertmanager.yaml
+```
+
+2. Edit the configuration in alertmanager.yaml:
+- Add a receiver with the name monitor-app and the webhook_config.
+- Add a route with the namespace where your demo application is running.
+```shell
+receivers:
+  - name: ...
+  - name: monitor-app
+    webhook_configs:
+      - url: >-
+          http://monitor-demo-app-monitor-demo.apps.rbaumgar.demo.net/hello/alert-hook
+route:
+  ...
+  routes:
+    - match: ...
+    - receiver: monitor-app
+      match:
+        namespace: monitor-demo          
+```
+
+3. Apply the new configuration in the file:
+
+```shell
+$ oc -n openshift-monitoring create secret generic alertmanager-main --from-file=alertmanager.yaml --dry-run=client -o=yaml |  oc -n openshift-monitoring replace secret --filename=-
+```
+
+To change the Alertmanager configuration from the OpenShift Container Platform web console:
+
+Navigate to the **Administration → Cluster Settings → Global Configuration → Alertmanager** of the web console. Create a Receiver.
+
+More Details [Sending notifications to external systems](https://docs.openshift.com/container-platform/4.6/monitoring/managing-alerts.html#sending-notifications-to-external-systems_managing-alerts)
+
+### Test Alert
+
+Call the 5xx url of the demo application twice and check the log of the demo application.
+
+```shell
+$ export URL=$(oc get route monitor-demo-app -o jsonpath='{.spec.host}')
+$ curl $URL/hello/5xx
+Got 5xx Response
+$ curl $URL/hello/5xx
+Got 5xx Response
+$ oc logs deployment/monitor-demo-app -f
+exec java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -XX:+ExitOnOutOfMemoryError -cp . -jar /deployments/quarkus-run.jar
+__  ____  __  _____   ___  __ ____  ______ 
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
+2022-01-14 16:14:25,474 INFO  [io.quarkus] (main) monitor-demo-app-micro 1.1-SNAPSHOT on JVM (powered by Quarkus 2.6.2.Final) started in 2.817s. Listening on: http://0.0.0.0:8080
+2022-01-14 16:14:25,522 INFO  [io.quarkus] (main) Profile prod activated. 
+2022-01-14 16:14:25,523 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, resteasy, smallrye-context-propagation, smallrye-metrics, vertx]
+Alert received: 
+{
+  "receiver": "monitor-app",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "Error500Alert",
+        "endpoint": "web",
+        "instance": "10.128.3.35:8080",
+        "job": "monitor-demo-app",
+        "namespace": "monitor-demo",
+        "pod": "monitor-demo-app-6d7c988969-77b6h",
+        "prometheus": "openshift-user-workload-monitoring/user-workload",
+        "service": "monitor-demo-app"
+      },
+      "annotations": {},
+      "startsAt": "2022-01-18T06:57:29.667Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus-user-workload-1:9090/graph?g0.expr=increase%28application_greetings_5xx_total%7Bjob%3D%22monitor-demo-app%22%2Cnamespace%3D%22monitor-demo%22%7D%5B1m%5D%29+%3E+2&g0.tab=1",
+      "fingerprint": "ddda7b9f7f011e4c"
+    }
+  ],
+  "groupLabels": {
+    "namespace": "monitor-demo"
+  },
+  "commonLabels": {
+    "alertname": "Error500Alert",
+    "endpoint": "web",
+    "instance": "10.128.3.35:8080",
+    "job": "monitor-demo-app",
+    "namespace": "monitor-demo",
+    "pod": "monitor-demo-app-6d7c988969-77b6h",
+    "prometheus": "openshift-user-workload-monitoring/user-workload",
+    "service": "monitor-demo-app"
+  },
+  "commonAnnotations": {},
+  "externalURL": "https://alertmanager-main-openshift-monitoring.apps.rbaumgar.demo.net",
+  "version": "4",
+  "groupKey": "{}/{namespace=\"monitor-demo\"}:{namespace=\"monitor-demo\"}",
+  "truncatedAlerts": 0
+}
+Alert received: {
+  "receiver": "monitor-app",
+  "status": "resolved",
+  "alerts": [
+    {
+      "status": "resolved",
+      "labels": {
+        "alertname": "Error500Alert",
+        "endpoint": "web",
+        "instance": "10.128.3.35:8080",
+        "job": "monitor-demo-app",
+        "namespace": "monitor-demo",
+        "pod": "monitor-demo-app-6d7c988969-77b6h",
+        "prometheus": "openshift-user-workload-monitoring/user-workload",
+        "service": "monitor-demo-app"
+      },
+      "annotations": {},
+      "startsAt": "2022-01-18T06:57:29.667Z",
+      "endsAt": "2022-01-18T06:57:59.667Z",
+      "generatorURL": "http://prometheus-user-workload-1:9090/graph?g0.expr=increase%28application_greetings_5xx_total%7Bjob%3D%22monitor-demo-app%22%2Cnamespace%3D%22monitor-demo%22%7D%5B1m%5D%29+%3E+2&g0.tab=1",
+      "fingerprint": "ddda7b9f7f011e4c"
+    }
+  ],
+  "groupLabels": {
+    "namespace": "monitor-demo"
+  },
+  "commonLabels": {
+    "alertname": "Error500Alert",
+    "endpoint": "web",
+    "instance": "10.128.3.35:8080",
+    "job": "monitor-demo-app",
+    "namespace": "monitor-demo",
+    "pod": "monitor-demo-app-6d7c988969-77b6h",
+    "prometheus": "openshift-user-workload-monitoring/user-workload",
+    "service": "monitor-demo-app"
+  },
+  "commonAnnotations": {},
+  "externalURL": "https://alertmanager-main-openshift-monitoring.apps.rbaumgar.demo.net",
+  "version": "4",
+  "groupKey": "{}/{namespace=\"monitor-demo\"}:{namespace=\"monitor-demo\"}",
+  "truncatedAlerts": 0
+}
+```
+
+Congratulation! Done!
+
 ## Remove this Demo
 
 ```shell
+$ oc delete prometheusrules.monitoring.coreos.com/example-500-alert
 $ oc delete deployment.apps/prometheus-adapter
 $ oc delete apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io
 $ oc delete clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics
@@ -835,6 +1027,8 @@ $ oc edit configmap/cluster-monitoring-config -n openshift-monitoring
 $ oc get pod -n openshift-user-workload-monitoring
 $ oc delete project monitor-demo
 ```
+
+The alter receiver has to be removed from the OpenShift web console!
 
 This document: 
 
