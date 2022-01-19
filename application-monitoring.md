@@ -1,12 +1,14 @@
 # Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems
 
-*By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5), update Janurary 2022 (OpenShift 4.9)*
+*By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5), update January 2022 (OpenShift 4.9)*
 
 In this blog I will guide you on
 
 - How to enable an application performance monitoring (APM).
 
-- How to scale a user application based on application metrics with a Horizontal Pod Aotoscaler (HPA).
+- How to scale a user application based on application metrics with a Horizontal Pod Autoscaler (HPA).
+
+- How to create an alert based on application metrics and send this alert to an external system.
 
 For the monitoring, I will use the OpenShift Monitoring with a new feature for monitoring your own services.
 
@@ -75,7 +77,7 @@ data:
 EOF
 ```
 
-## Check User Worload Monitoring
+## Check User Workload Monitoring
 
 After a short time, you can check that the prometheus-user-workload pods were created and running:
 
@@ -213,7 +215,7 @@ hello from monitor-demo-app monitor-demo-app-78fc685c94-mtm28
 See all available metrics */q/metrics* and only application specific metrics */q/metrics/application*:
 
 ```shell
-$ curl $URL/metrics/application
+$ curl $URL/q/metrics/application
 # HELP application_greetings_total How many greetings we've given.
 # TYPE application_greetings_total counter
 application_greetings_total 3.0
@@ -233,7 +235,7 @@ application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 
 
 ## Setting up Metrics Collection
 
-To use the metrics exposed by your service, you need to configure OpenShift Monitoring to scrape metrics from the /metrics endpoint. You can do this using a ServiceMonitor, a custom resource definition (CRD) that specifies how a service should be monitored, or a PodMonitor, a CRD that specifies how a pod should be monitored. The former requires a Service object, while the latter does not, allowing Prometheus to directly scrape metrics from the metrics endpoint exposed by a pod.
+To use the metrics exposed by your service, you need to configure OpenShift Monitoring to scrape metrics from the */q/metrics* endpoint. You can do this using a ServiceMonitor, a custom resource definition (CRD) that specifies how a service should be monitored, or a PodMonitor, a CRD that specifies how a pod should be monitored. The former requires a Service object, while the latter does not, allowing Prometheus to directly scrape metrics from the metrics endpoint exposed by a pod.
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -853,14 +855,14 @@ The user can view the rules of one project in the Developer perspective, navigat
 
 ## Sending Alerts to External Systems
 
-In OpenShift Container Platform 4.6, firing alerts can be viewed in the Alerting UI. Alerts are not configured by default to be sent to any notification systems. You can configure OpenShift Container Platform to send alerts to the following receiver types:
+In OpenShift Container Platform 4.6+, firing alerts can be viewed in the Alerting UI. Alerts are not configured by default to be sent to any notification systems. You can configure OpenShift Container Platform to send alerts to the following receiver types:
 
 - PagerDuty
 - Webhook
 - Email
 - Slack
 
-In this demo we will send the alert to our sample application (webhook)
+In this demo we will send the alert to our sample application (webhook).
 
 ### Configuring alert receivers
 
@@ -875,6 +877,7 @@ $ oc -n openshift-monitoring get secret alertmanager-main --template='{{ index .
 2. Edit the configuration in alertmanager.yaml:
 - Add a receiver with the name monitor-app and the webhook_config.
 - Add a route with the namespace where your demo application is running.
+
 ```shell
 receivers:
   - name: ...
@@ -1036,4 +1039,4 @@ The alter receiver has to be removed from the OpenShift web console!
 
 This document: 
 
-**[monitor-demo-app/application-monitoring.md at master · rbaumgar/monitor-demo-app · GitHub](https://github.com/rbaumgar/monitor-demo-app/blob/master/application-monitoring.md)**
+**[Github: rbaumgar/monitor-demo-app](https://github.com/rbaumgar/monitor-demo-app/blob/master/application-monitoring.md)**
