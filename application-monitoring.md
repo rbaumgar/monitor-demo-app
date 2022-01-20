@@ -1,5 +1,7 @@
 # Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems
 
+![](images/title01.jpg)
+
 *By Robert Baumgartner, Red Hat Austria, April 2020 (OpenShift 4.3), update July 2020 (OpenShift 4.5), update January 2022 (OpenShift 4.9)*
 
 In this blog I will guide you on
@@ -273,13 +275,13 @@ Once you have enabled monitoring your own services, deployed a service, and set 
 
 1. Access the Prometheus web interface:
    
-   - To access the metrics as a cluster administrator, go to the OpenShift Container Platform web console, switch to the Administrator Perspective, and click **Observer → Metrics** (openshift 4.8+) or  **Monitoring → Metrics**.
+   - To access the metrics as a cluster administrator, go to the OpenShift Container Platform web console, switch to the Administrator Perspective, and click **Observer → Metrics** (openshift 4.8+) or **Monitoring → Metrics**.
      
      :star: Cluster administrators, when using the Administrator Perspective, have access to all cluster metrics and to custom service metrics from all projects.
      
      :star: Only cluster administrators have access to the Alertmanager and Prometheus UIs.
    
-   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**. In OpenShift 4.3 click on **Advanced → Metrics**.
+   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**. In OpenShift 4.3 click on **Advanced → Metrics**.
      
      :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
@@ -818,9 +820,9 @@ If scale down takes longer than expected, this Kubernetes documentation explains
 
 **Configure Cooldown Period**
 
-The dynamic nature of the metrics being evaluated by the HPA may at times lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay) where the number of replicas fluctuates frequently and is not desirable. 
+The dynamic nature of the metrics being evaluated by the HPA may at times lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay) where the number of replicas fluctuates frequently and is not desirable.
 
-To get around this and specify a cool down period, a best practice is to configure the `--horizontal-pod-autoscaler-downscale-stabilization` flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
+To get around this and specify a cool down period, a best practice is to configure the *--horizontal-pod-autoscaler-downscale-stabilization* flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
 
 ## Alert Rules
 
@@ -839,8 +841,10 @@ spec:
     - name: example
       rules:
         - alert: Error500Alert
-          expr: >-
-            increase(application_greetings_5xx_total{job="monitor-demo-app"}         [1m]) > 2
+          description: The demo application has received more than two "/hello/5xx" within one minute
+          message: 5xx received
+          summary: more 2 5xx requests where received within 1 minute
+          expr: increase(application_greetings_5xx_total{job="monitor-demo-app"}[1m]) > 2
 EOF
 prometheusrules.monitoring.coreos.com/example-500-alert created
 ```
@@ -1013,6 +1017,8 @@ Alert received: {
   "truncatedAlerts": 0
 }
 ```
+
+You will find in the application log two alters received. One when the alert is fired an one minute later when the alert is resolved.
 
 Congratulation! Done!
 
