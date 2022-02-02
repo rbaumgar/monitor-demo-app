@@ -663,7 +663,8 @@ I0417 13:23:32.030695       1 wrap.go:47] GET /apis/custom.metrics.k8s.io/v1beta
 ...
 ```
 
-:star: In OpenShift 4.9 you have to change the prometheus-url to "https://thanos-querier.openshift-monitoring:9091'" otherwise the Prometheus adapter get a 404 on "/api/v1/series?match[]...". (Prometheus API does not work)
+:star: In OpenShift 4.9 you have to change the prometheus-url to "https://thanos-querier.openshift-monitoring:9092" otherwise the Prometheus adapter get a 404 on "/api/v1/series?match[]...". (Prometheus provides only /metrics on port 9091)
+:star: Thanos Querier port 9092 is the tenancy view - only metrics you are allowed to get. Port 9091 is a global view!
 
 ## Check Custom Metrics
 
