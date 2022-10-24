@@ -28,3 +28,7 @@ target/
 .classpath
 .project
 .settings/
+.settings/org.eclipse.jdt.core.prefs
+.project
+.project
+.gitignore
