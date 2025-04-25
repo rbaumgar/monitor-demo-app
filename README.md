@@ -26,7 +26,7 @@ Listening for transport dt_socket at address: 5005
 2022-01-18 13:32:31,113 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, resteasy, smallrye-context-propagation, smallrye-metrics, vertx]
 ```
 
-and from an other window
+and from another window
 
 ```shell
 $ curl localhost:8080/hello
@@ -41,7 +41,7 @@ OK
 
 *unknown* is because of running outside of a container. Running in a container *unknown* will be the container name.
 
-Testing the the prime checker
+Testing the prime checker
 
 ```shell
 $ curl localhost:8080/prime/1
@@ -122,7 +122,7 @@ application_org_example_rbaumgar_PrimeNumberChecker_performedChecks_total 5.0
 
 So the number of API calls to *hello* is **greetings**.
 
-# Build an image with podman
+# Build an image with Podman
 
 ```shell
 $ mvn clean package -DskipTests
@@ -136,7 +136,7 @@ exec java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logm
 
 You can also use *docker*.
 
-# Build a quarkus native image
+# Build a Quarkus native image
 
 You need to install Graal VM and set the correct pointer.
 
@@ -180,7 +180,7 @@ $ oc rollout status -w dc/monitor-demo
 $ podman run -i --rm -p 8080:8080 quarkus/monitor-demo-app-jvm
 ```
 
-# Push image to registry
+# Push the image to the registry
 
 Find the *image id* and push it. You might need to login at first.
 

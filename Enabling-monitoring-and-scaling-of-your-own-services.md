@@ -82,7 +82,7 @@ Using project "monitor-demo".
 
 ## Create a sample application
 
-Deploying a sample application *monitor-demo-app* end expose a route.
+Deploying a sample application *monitor-demo-app* and expose a route.
 
 The application is based on an example you will find at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring(APM)](https://github.com/rbaumgar/monitor-demo-app) 
 
@@ -136,7 +136,7 @@ route.route.openshift.io/monitor-demo-app exposed
 
 :star: It is very important, that you define labels at the Deployment and Service. Those will later be referenced!
 
-# Check new monitoring app
+# Check the new monitoring app
 
 Check the router url with */hello* and see the hello message and the pod name. Do this multiple times.
 
@@ -146,7 +146,7 @@ $ curl $URL/hello
 hello from monitor-demo-app monitor-demo-app-78fc685c94-mtm28
 ```
 
-# Check the availalable metrics
+# Check the available metrics
 
 See all available metrics */metrics* and only application specific metrics */metrics/application*.
 
@@ -220,7 +220,7 @@ You can generate load onto your application, so will see more on the graph.
 $ for i in {1..1000}; do curl $URL/hello; sleep 10; done
 ```
 
-Example: If you want to see the number of requests per second (rated in 2 minutes) on the sample service, you can use following query
+Example: If you want to see the number of requests per second (rated in 2 minutes) on the sample service, you can use the following query
 
 > sum(rate(application_org_example_rbaumgar_GreetingResource_greetings_total{namespace="monitor-demo"}[2m]))
 
@@ -361,7 +361,7 @@ E0414 10:43:35.168288       1 errors.go:77] subjectaccessreviews.authorization.k
 I0414 10:43:35.168323       1 wrap.go:47] GET /apis/custom.metrics.k8s.io/v1beta1?timeout=32s: (1.963244ms) 500
 ```
 
-## Create an APIService for the custom metrics for Prometheus Adapter
+## Create an APIService for the custom metrics for the Prometheus Adapter
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -382,7 +382,7 @@ EOF
 apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io created
 ```
 
-:star: If you are using a different namespace, pleace replace the namespace. (montor-demo)
+:star: If you are using a different namespace, please replace the namespace. (montor-demo)
 
 ## Show the Prometheus Adapter image to use.
 
@@ -393,7 +393,7 @@ $ oc get -n openshift-monitoring deploy/prometheus-adapter -o jsonpath="{..image
 quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a8e3c383b36684a28453a4f5bb65863167bbeb409b91c9c3f5f50e1d5e923dc9
 ```
 
-Create Prometheus Adapater
+Create Prometheus Adapter
 
 ## Login as the normal user
 

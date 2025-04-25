@@ -95,7 +95,7 @@ thanos-ruler-user-workload-1           3/3     Running   0          10h
 
 ## Create a New Project
 
-Create a new project (for example monitor-demo) and give a normal user (such as developer) admin rights onto the project. Add the new created role (monitor-crd-edit) to the user:
+Create a new project (for example monitor-demo) and give a normal user (such as developer) admin rights onto the project. Add the new created role (monitoring-edit) to the user:
 
 ```shell
 $ oc new-project monitor-demo
