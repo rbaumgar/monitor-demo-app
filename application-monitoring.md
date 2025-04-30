@@ -1,28 +1,28 @@
-# Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems
+# Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules, and Sending to External Systems
 
 ![](images/title01.jpg)
 
 *By Robert Baumgartner, Red Hat Austria, May 2025 (OpenShift 4.18)*
 
-In this blog I will guide you on
+In this blog, I will guide you on
 
-- How to enable an application performance monitoring (APM).
+- How do you enable application performance monitoring (APM)?
 
-- How to scale a user application based on application metrics with a Horizontal Pod Autoscaler (HPA).
+- How do you scale a user application based on application metrics with a Horizontal Pod Autoscaler (HPA)?
 
-- How to create an alert based on application metrics and send this alert to an external system.
+- How do you create an alert based on application metrics and send this alert to an external system?
 
-For the monitoring, I will use the OpenShift Monitoring with a new feature for monitoring your own services.
+For the monitoring, I will use the OpenShift Monitoring with a new feature for monitoring your own services User Workload Monitoring
 
 You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
 
 News:
-- the developer can sclae the application by using the Custom Metrics Autoscaler Operator, based on Kubernetes-based Event Driven Autoscaler (KEDA). Released with OpernSHift 4.12
-- developer is able to create alerts and forward this alerts to an external system.
+- The developer can scale the application by using the *Custom Metrics Autoscaler Operator*, based on Kubernetes-based Event Driven Autoscaler (KEDA). It was released with OpernShift 4.12.
+- The developer can create alerts and forward these alerts to an external system.
 
 See [Configuring user workload monitoring](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/configuring-user-workload-monitoring)
 
-An older version of this document is available, but some featutes are no longer available. See [(old!) Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems](application-monitoring-old.md).
+An older version of this document is available, but some features are no longer available. See [(old!) Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems](application-monitoring-old.md).
 
 ## Enabling Monitoring of Your Own Services in OpenShift
 
@@ -123,7 +123,7 @@ You use a *ScaledObject* or *ScaledJob* custom resource to configure triggers fo
 
 ## Create a New Project
 
-Create a new project (for example monitor-demo) and give a normal user (such as developer) admin rights onto the project. Add the new created role (monitoring-edit) to the user:
+Create a new project (for example monitor-demo) and give a normal user (such as developer) admin rights onto the project. Add the newly created role (monitoring-edit) to the user:
 
 ```shell
 $ oc new-project monitor-demo
@@ -143,7 +143,7 @@ $ oc policy add-role-to-user alert-routing-edit developer -n monitor-demo
 clusterrole.rbac.authorization.k8s.io/alert-routing-edit added: "developer"
 ```
 
-The role *alert-routing-edit* is only required if the user should be able to to configure alert notification routing and receivers for user-defined projects.
+The role *alert-routing-edit* is only required if the user should be able to configure alert notification routing and receivers for user-defined projects.
 
 ## Login as the Normal User
 
@@ -163,11 +163,11 @@ Using project "monitor-demo".
 
 ### Deploy a Sample Application
 
-All modern application development frameworks (like Quarkus) supports out-of-the-box metrics features, like Eclipse Microprofile support in Quarkus, [Quarkus - MicroProfile Metrics](https://quarkus.io/guides/microprofile-metrics).
+All modern application development frameworks (like Quarkus) support out-of-the-box metrics features, like Eclipse Microprofile support in Quarkus, [Quarkus - MicroProfile Metrics](https://quarkus.io/guides/microprofile-metrics).
 
 To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring (APM)](https://github.com/rbaumgar/monitor-demo-app). 
 
-Deploying a sample application monitor-demo-app end expose a route:
+Deploying a sample application monitor-demo-app and exposes a route:
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -227,13 +227,13 @@ service/monitor-demo-app created
 route.route.openshift.io/monitor-demo-app exposed
 ```
 
-If you want to use the Quarkus native image change the image name in the deployment to *monitor-demo-app-native*.
+If you want to use the Quarkus native image, change the image name in the deployment to *monitor-demo-app-native*.
 
-:star: It is very important that you define labels at the Deployment and Service. Those will  be referenced later!
+:star: It is very important that you define labels at the Deployment and Service. Those will be referenced later!
 
 ### Test Sample Application
 
-Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
+Check the router URL with */hello* and see the hello message with the pod name. Do this multiple times.
 
 ```shell
 $ export URL=$(oc get route monitor-demo-app -o jsonpath='{.spec.host}')
@@ -265,7 +265,7 @@ application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 
 ...
 ```
 
- With *application_greetings_total*, you will see how often you have called the */hello* url. Later we will use this metric.
+ With *application_greetings_total*, you will see how often you have called the */hello* URL. Later, we will use this metric.
 
 ## Setting up Metrics Collection
 
@@ -295,7 +295,7 @@ NAME                   AGE
 monitor-demo-monitor   42s
 ```
 
-:star: For Quarkus application the dafault path for metrics is */q/metrics*, so you have to specify it!
+:star: For a Quarkus application, the default path for metrics is */q/metrics*, so you have to specify it!
 
 If you are not able to create the *ServiceMonitor*, you do not have the role *montitoring-rules-edit*.
 
@@ -303,7 +303,7 @@ If you are not able to create the *ServiceMonitor*, you do not have the role *mo
 
 ## Accessing the Metrics of Your Service
 
-Once you have enabled monitoring your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
+Once you have enabled the monitoring of your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
 
 1. Access the Prometheus web interface:
    
@@ -323,16 +323,15 @@ Here is an example:
 
 ![metrics_view.png)](images/metrics_view49.png)
 
-You can generate load onto your application, and so will see more on the graph.
+You can generate load onto your application, and so you will see more on the graph.
 
 ```shell
 $ for i in {1..1000}; do curl $URL/hello; sleep 10; done
 ```
 
-PromQL Example: If you want to see the number of requests per second (rated in two minutes) on the sample service, you can use following query:
+PromQL Example: If you want to see the number of requests per second (rated in two minutes) on the sample service, you can use the following query:
 
 > sum(rate(application_greetings_total{namespace="monitor-demo"}[2m]))
-
 
 You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
 
@@ -348,7 +347,7 @@ Prometheus Adapter is a Technology Preview feature only. See [Exposing custom ap
 
 ### Create Service Account
 
-Create a new service account for your Prometheus Adapter in the user namespace (for example monitor-demo):
+Create a new service account for your Prometheus Adapter in the user namespace (for example, monitor-demo):
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -441,7 +440,7 @@ spec:
     type: prometheus
 EOF
 
-:star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo). And when you want to scale a different deployment object you have to change the *name* in the *scaleTargetRef*.
+:star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo). And when you want to scale a different deployment object, you have to change the *name* in the *scaleTargetRef*.
 
 Check the scaledojects and automatically created the Horizontal Pod Autoscaling/hpa
 
@@ -454,9 +453,9 @@ NAME                  REFERENCE                     TARGETS     MINPODS   MAXPOD
 keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         5         1          153m
 ```
 
-Now it is time do the final test!
+Now it is time to do the final test!
 
-Run on one screen the load generator. Something like:
+Run the load generator on one screen. Something like:
 
 ```shell
 $ for i in {1..1000}; do curl $URL/hello >/dev/null 2>&1; sleep .10; done
@@ -513,11 +512,11 @@ Oh, one more thing ...
 
 ### Scale Down
 
-If scale down takes longer than expected, this Kubernetes documentation explains why
+If scaling down takes longer than expected, this Kubernetes documentation explains why
 
 **Configure Cooldown Period**
 
-The dynamic nature of the metrics being evaluated by the HPA may at times lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay) where the number of replicas fluctuates frequently and is not desirable.
+The dynamic nature of the metrics being evaluated by the HPA may at times, lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay), where the number of replicas fluctuates frequently and is not desirable.
 
 To get around this and specify a cool down period, a best practice is to configure the *--horizontal-pod-autoscaler-downscale-stabilization* flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
 
@@ -552,24 +551,22 @@ If that label (leaf-prometheus) is present, the alerting rule is deployed on the
 
 The cluster-admin can view all alert rules in the Administrator perspective, navigate to **Monitoring → Alerting → Alerting Rules**.
 
-The user can view the rules of one project in the Developer perspective, navigate to **Monitoring → Alerts page** in the OpenShift Container Platform web console.
+The user can view the rules of one project in the Developer perspective, navigate to **Observe → Alerts** in the OpenShift Container Platform web console.
 
 ## Sending Alerts to External Systems
 
-In OpenShift Container Platform firing alerts can be viewed in the Alerting UI. Alerts are not configured by default to be sent to any notification systems. You can configure OpenShift Container Platform to send alerts to the following receiver types:
+In OpenShift Container Platform, firing alerts can be viewed in the Alerting UI. Alerts are not configured by default to be sent to any notification systems. You can configure OpenShift Container Platform to send alerts to the following receiver types:
 
 - PagerDuty
 - Webhook
 - Email
 - Slack
 
-In this demo we will send the alert to our sample application (webhook).
+In this demo, we will send the alert to our sample application (webhook).
 
 ### Configuring alert receivers
 
-You can configure alert receivers as a user with the cluster-admin role.
-
-1. Print the currently active Alertmanager configuration into file alertmanager.yaml:
+You can configure the alert receivers as a developer.
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -596,7 +593,7 @@ More Details [ Managing alerts as a Developer](https://docs.redhat.com/en/docume
 
 ### Test Alert
 
-Call the 5xx url of the demo application twice and check the log of the demo application.
+Call the 5xx URL of the demo application twice and check the log of the demo application.
 
 ```shell
 $ export URL=$(oc get route monitor-demo-app -o jsonpath='{.spec.host}')
