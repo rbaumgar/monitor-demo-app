@@ -32,3 +32,6 @@ target/
 .project
 .project
 .gitignore
+alert.md
+keda.md
+.gitignore
