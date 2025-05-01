@@ -12,7 +12,7 @@ In this blog, I will guide you on
 
 - How do you create an alert based on application metrics and send this alert to an external system?
 
-For the monitoring, I will use the OpenShift Monitoring with a new feature for monitoring your own services User Workload Monitoring
+For the monitoring, I will use the OpenShift Monitoring with a new feature for monitoring your own services, User Workload Monitoring.
 
 You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
 
@@ -49,18 +49,18 @@ As a cluster administrator, you can enable alert routing for user-defined projec
 
 ## Check User Workload Monitoring
 
-After a short time, you can check that the prometheus-user-workload pods were created and running:
+After a short time, you can check that all the user-workload-monitoring pods are up and running:
 
 ```shell
 $ oc get pod -n openshift-user-workload-monitoring
 NAME                                   READY   STATUS    RESTARTS   AGE
-alertmanager-user-workload-0           6/6     Running   0          5d1h
-alertmanager-user-workload-1           6/6     Running   0          5d1h
-prometheus-operator-744ff78877-k2ng5   2/2     Running   0          5d21h
-prometheus-user-workload-0             6/6     Running   0          5d21h
-prometheus-user-workload-1             6/6     Running   2          5d21h
-thanos-ruler-user-workload-0           4/4     Running   0          5d21h
-thanos-ruler-user-workload-1           4/4     Running   0          5d21h
+alertmanager-user-workload-0           6/6     Running   0          60s
+alertmanager-user-workload-1           6/6     Running   0          59s
+prometheus-operator-744ff78877-wrt5f   2/2     Running   0          66s
+prometheus-user-workload-0             6/6     Running   0          43s
+prometheus-user-workload-1             6/6     Running   0          43s
+thanos-ruler-user-workload-0           4/4     Running   0          60s
+thanos-ruler-user-workload-1           4/4     Running   0          60s
 ```
 
 ## Install the Custom Metrics Autoscaler Operator
@@ -77,11 +77,11 @@ $ oc get all -n openshift-keda
 Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
 Warning: kubevirt.io/v1 VirtualMachineInstancePresets is now deprecated and will be removed in v2.
 NAME                                                     READY   STATUS    RESTARTS   AGE
-pod/custom-metrics-autoscaler-operator-54db496b7-cww25   1/1     Running   0          5d9h
+pod/custom-metrics-autoscaler-operator-54db496b7-cww25   1/1     Running   0          42s
 NAME                                                 READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/custom-metrics-autoscaler-operator   1/1     1            1           5d9h
+deployment.apps/custom-metrics-autoscaler-operator   1/1     1            1           43s
 NAME                                                           DESIRED   CURRENT   READY   AGE
-replicaset.apps/custom-metrics-autoscaler-operator-54db496b7   1         1         1       5d9h
+replicaset.apps/custom-metrics-autoscaler-operator-54db496b7   1         1         1       43s
 ```
 
 See [Installing the custom metrics autoscaler](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/nodes/automatically-scaling-pods-with-the-custom-metrics-autoscaler-operator#nodes-cma-autoscaling-custom-install_nodes-cma-autoscaling-custom-install)
@@ -105,9 +105,22 @@ spec:
     logEncoder: console
     logLevel: info
   watchNamespace: ""
+EOF
+kedacontroller.keda.sh/keda created
 ```
 
 **watchNamespaces** specifies a single namespace in which the Custom Metrics Autoscaler Operator should scale applications. Leave it blank or leave it empty to scale applications in all namespaces. 
+
+Verify the keda pods are up and running
+
+```shell
+$ c get pod -n openshift-keda
+NAME                                                  READY   STATUS    RESTARTS   AGE
+custom-metrics-autoscaler-operator-66ccfc9f6c-89vhs   1/1     Running   0          3m58s
+keda-admission-569c474866-l5q2s                       1/1     Running   0          34s
+keda-metrics-apiserver-77556ffd5b-kkkm7               1/1     Running   0          37s
+keda-operator-7fbb8bc74f-fd228                        1/1     Running   0          41s
+```
 
 ## Understanding custom metrics autoscaler triggers 
 
@@ -120,6 +133,8 @@ You use a *ScaledObject* or *ScaledJob* custom resource to configure triggers fo
 - Prometheus trigger: You can scale pods based on Prometheus metrics, which can use the installed OpenShift Container Platform monitoring or an external Prometheus server as the metrics source. 
 - CPU trigger: You can scale pods based on CPU metrics. This trigger uses cluster metrics as the source for metrics.
 - Memory trigger:You can scale pods based on memory metrics. This trigger uses cluster metrics as the source for metrics.
+
+See [Understanding custom metrics autoscaler triggers](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/nodes/automatically-scaling-pods-with-the-custom-metrics-autoscaler-operator#nodes-cma-autoscaling-custom-overview-trigger)
 
 ## Create a New Project
 
@@ -135,9 +150,9 @@ to build a new example application in Python. Or use kubectl to deploy a simple 
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
 
-$ oc policy add-role-to-user admin developer -n monitor-demo 
+$ oc policy add-role-to-user admin developer -n monitor-demo
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
-$ oc policy add-role-to-user monitoring-edit developer -n monitor-demo 
+$ oc policy add-role-to-user monitoring-edit developer -n monitor-demo
 clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 $ oc policy add-role-to-user alert-routing-edit developer -n monitor-demo
 clusterrole.rbac.authorization.k8s.io/alert-routing-edit added: "developer"
@@ -337,6 +352,8 @@ You can also use the **Thanos Querier** to display the application metrics. The 
 
 Thanos Querier can be reached at: https://thanos-querier-openshift-monitoring.apps.your.cluster/graph
 
+:star: That you doesn't have a network policy in place which prevents th user workload monitoring to get metrics data.
+
 If you are just interested in exposing application metrics to the dashboard, you can stop here.
 
 ## Exposing Custom Application Metrics for Auto-Scaling
@@ -345,12 +362,17 @@ If you are just interested in exposing application metrics to the dashboard, you
 
 Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring](https://docs.openshift.com/container-platform/4.6/monitoring/exposing-custom-application-metrics-for-autoscaling.html).
 
-### Create Service Account
+### Create a Service Account and a Secret to generate a Service Account Token
 
-Create a new service account for your Prometheus Adapter in the user namespace (for example, monitor-demo):
+Create a new service account to get access to the thanos data. Thanos hold the collected metrics.
 
 ```shell
 $ cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: thanos
+---
 apiVersion: v1
 kind: Secret
 metadata:
@@ -359,7 +381,60 @@ metadata:
     kubernetes.io/service-account.name: thanos
 type: kubernetes.io/service-account-token
 EOF
-serviceaccount/thanos-token created
+serviceaccount/thanos created
+secret/thanos-token created
+```
+
+Locate the token assigned to the service account:
+
+```shell
+$ oc describe secret/thanos-token 
+Name:         thanos-token
+Namespace:    monitor-demo
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name: thanos
+              kubernetes.io/service-account.uid: 0a45d802-1631-4a7e-bd5a-40f2e8328529
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:          8594 bytes
+namespace:       12 bytes
+service-ca.crt:  11019 bytes
+token:           eyJhbGciOiJSUzI1NiIsImt...
+
+$ oc describe serviceaccount thanos
+Name:                thanos
+Namespace:           monitor-demo
+Labels:              <none>
+Annotations:         openshift.io/internal-registry-pull-secret-ref: thanos-dockercfg-cxl6z
+Image pull secrets:  thanos-dockercfg-cxl6z
+Mountable secrets:   thanos-dockercfg-cxl6z
+Tokens:              thanos-token
+Events:              <none>
+```
+
+You can see that the Secret now contains an API token for the ServiceAccount *thanos*.
+
+### Create a Trigger Authenticator
+
+```shell
+$ cat <<EOF | oc apply -f -
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-prometheus
+spec:
+  secretTargetRef:
+  - parameter: bearerToken
+    name: thanos-token
+    key: token
+  - parameter: ca
+    name: thanos-token
+    key: ca.crt
+EOF
+triggerauthentication.keda.sh/keda-trigger-auth-prometheus created
 ```
 
 ### Create the Required Cluster Roles
@@ -412,6 +487,7 @@ rolebinding.rbac.authorization.k8s.io/thanos-metrics-reader created
 
 ## Create the Prometheus trigger 
 
+The trigger accesses the data with the triggerAuthicator from thanos.
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -420,6 +496,7 @@ kind: ScaledObject
 metadata:
   name: monitor-so
 spec:
+  maxReplicaCount: 5
   minReplicaCount: 1
   scaleTargetRef:
     name: monitor-demo-app
@@ -430,7 +507,7 @@ spec:
       name: keda-trigger-auth-prometheus
     metadata:
       authModes: bearer
-      ignoreNullValues: "false"
+      ignoreNullValues: "true"
       metricName: my_http_requests
       namespace: monitor-demo
       query: sum(rate(application_greetings_total{job="monitor-demo-app"}[1m]))
@@ -439,19 +516,23 @@ spec:
       unsafeSsl: "false"
     type: prometheus
 EOF
+scaledobject.keda.sh/monitor-so created
+```
 
 :star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo). And when you want to scale a different deployment object, you have to change the *name* in the *scaleTargetRef*.
 
-Check the scaledojects and automatically created the Horizontal Pod Autoscaling/hpa
+Check the scaledoject and automatically created the Horizontal Pod Autoscaling/hpa
 
 ```shell
-$ oc get scaledobjects 
+$ oc get so
 NAME         SCALETARGETKIND      SCALETARGETNAME    MIN   MAX   TRIGGERS     AUTHENTICATION                 READY   ACTIVE   FALLBACK   PAUSED    AGE
-monitor-so   apps/v1.Deployment   monitor-demo-app   1     5     prometheus   keda-trigger-auth-prometheus   True    False    False      Unknown   152m
-$ oc get hpa
+monitor-so   apps/v1.Deployment   monitor-demo-app   1           prometheus   keda-trigger-auth-prometheus   True    False    Unknown    Unknown   25s
+rbaumgar@rbaumgar-thinkpadt14gen5:~/demo/quarkus/monitor-demo-app$ oc get hpa
 NAME                  REFERENCE                     TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
-keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         5         1          153m
+keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         100       1          59s
 ```
+
+The name for the *hpa* gets a prefix of *keda-hpa-*.
 
 Now it is time to do the final test!
 
@@ -465,20 +546,27 @@ On another screen, we will check the number of pods:
 
 ```shell
 $ for i in {1..20}; do oc get pod -l app=monitor-demo-app; sleep 30; done
-NAME                               READY   STATUS    RESTARTS   AGE
-monitor-demo-app-fd65c7894-krjsp   1/1     Running   3          6d1h
-NAME                               READY   STATUS    RESTARTS   AGE
-monitor-demo-app-fd65c7894-krjsp   1/1     Running   3          6d1h
-NAME                               READY   STATUS    RESTARTS   AGE
-monitor-demo-app-fd65c7894-667gg   1/1     Running   0          17s
-monitor-demo-app-fd65c7894-f8fps   1/1     Running   0          17s
-monitor-demo-app-fd65c7894-krjsp   1/1     Running   3          6d1h
-NAME                               READY   STATUS    RESTARTS   AGE
-monitor-demo-app-fd65c7894-5lxd9   1/1     Running   0          18s
-monitor-demo-app-fd65c7894-667gg   1/1     Running   0          48s
-monitor-demo-app-fd65c7894-f8fps   1/1     Running   0          48s
-monitor-demo-app-fd65c7894-krjsp   1/1     Running   3          6d1h
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          8m14s
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          8m44s
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-4jpw4   1/1     Running   0          27s
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          9m15s
+monitor-demo-app-67f655bf68-jmkq4   1/1     Running   0          27s
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-4jpw4   1/1     Running   0          57s
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          9m45s
+monitor-demo-app-67f655bf68-g2fk2   1/1     Running   0          26s
+monitor-demo-app-67f655bf68-jmkq4   1/1     Running   0          57s
+monitor-demo-app-67f655bf68-rpb6m   1/1     Running   0          26s
 ...
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-4jpw4   1/1     Running   0          7m1s
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          15m
+monitor-demo-app-67f655bf68-jmkq4   1/1     Running   0          7m1s
+NAME                                READY   STATUS    RESTARTS   AGE
+monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          16m
 ```
 
 We see that the number of pods is increasing automatically.
@@ -488,20 +576,19 @@ We can also check the HPA.
 Under *TARGETS* we see the actual value of *my_http_requests*:
 
 ```shell
-$ for i in {1..12}; do oc get hpa; sleep 30; done
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   0/1       1         4         1          56s
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   955m/1    1         4         1          86s
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   2433m/1   1         4         3          116s
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   3633m/1   1         4         4          2m27s
+$ for i in {1..20}; do oc get hpa; sleep 30; done
+NAME                  REFERENCE                     TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         5         1          10m
+NAME                  REFERENCE                     TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-monitor-so   Deployment/monitor-demo-app   2772m/1 (avg)   1         5         1          10m
+NAME                  REFERENCE                     TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-monitor-so   Deployment/monitor-demo-app   1457m/1 (avg)   1         5         3          11m
+NAME                  REFERENCE                     TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-monitor-so   Deployment/monitor-demo-app   934m/1 (avg)   1         5         5          11m
 ...
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   0/1       1         4         3          10m
-NAME              REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-monior-demo-hpa   Deployment/monitor-demo-app   0/1       1         4         1          11m
+keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         5         3          17m
+NAME                  REFERENCE                     TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-monitor-so   Deployment/monitor-demo-app   0/1 (avg)   1         5         1          18mN
 ```
 
 Perfect! Everything works as expected!
@@ -512,13 +599,7 @@ Oh, one more thing ...
 
 ### Scale Down
 
-If scaling down takes longer than expected, this Kubernetes documentation explains why
-
-**Configure Cooldown Period**
-
-The dynamic nature of the metrics being evaluated by the HPA may at times, lead to scaling events in quick succession without a period between those scaling events. This leads to [thrashing](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay), where the number of replicas fluctuates frequently and is not desirable.
-
-To get around this and specify a cool down period, a best practice is to configure the *--horizontal-pod-autoscaler-downscale-stabilization* flag passed to the kube-controller-manager. This flag has a default value of five minutes and specifies the duration HPA waits after a downscale event before initiating another downscale operation.
+If scaling down takes longer than expected, the *cooldownPeriod* in the *ScaledObject* specifies the period in seconds to wait after the last trigger is reported before scaling the deployment back to 0 if the minReplicaCount is set to 0. The default is 300.
 
 ## Alert Rules
 
@@ -584,7 +665,7 @@ spec:
   receivers:
   - name: monitor-app
     webhookConfigs:
-    - url: http://monitor-demo-app-monitor-demo.apps.ocp4.openshift.freeddns.org/hello/alert-hook
+    - url: http://${URL}/hello/alert-hook
 EOF
 alertmanagerconfig.monitoring.coreos.com/example-routing created
 ```
@@ -704,23 +785,20 @@ Congratulation! Done!
 ## Remove this Demo
 
 ```shell
+$ oc delete alertmanagerconfig.monitoring.coreos.com/example-routing
 $ oc delete prometheusrules.monitoring.coreos.com/example-500-alert
-$ oc delete deployment.apps/prometheus-adapter
-$ oc delete apiservice.apiregistration.k8s.io/v1beta1.custom.metrics.k8s.io
-$ oc delete clusterrolebinding.rbac.authorization.k8s.io/hpa-controller-custom-metrics
-$ oc delete clusterrolebinding.rbac.authorization.k8s.io/custom-metrics-resource-reader
-$ oc delete rolebinding.rbac.authorization.k8s.io/custom-metrics-auth-reader
-$ oc delete clusterrolebinding.rbac.authorization.k8s.io/custom-metrics:system:auth-delegator
-$ oc delete clusterrole.rbac.authorization.k8s.io/custom-metrics-resource-reader
-$ oc delete clusterrole.rbac.authorization.k8s.io/custom-metrics-server-resources
-$ oc delete servicemonitor.monitoring.coreos.com/monitor-demo-monitor 
-$ oc delete ClusterRole/monitor-crd-edit
+$ oc delete scaledobject.keda.sh/monitor-so
+$ oc delete deployment.apps/monitor-demo-app
+$ oc delete service/monitor-demo-app
+$ oc delete route.route.openshift.io/monitor-demo-app
+$ oc delete project monitor-demo
+# as cluster-admin
 $ oc edit configmap/cluster-monitoring-config -n openshift-monitoring
 $ oc get pod -n openshift-user-workload-monitoring
-$ oc delete project monitor-demo
 ```
 
-The alter receiver has to be removed from the OpenShift web console!
+The OpenShift custom metrics Autoscaler Operator can be removeed as cluster-admin at the console.
+
 
 This document: 
 
