@@ -1,6 +1,6 @@
 # Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules, and Sending to External Systems
 
-![](images/title01.jpg)
+![](images/title03.jpg)
 
 *By Robert Baumgartner, Red Hat Austria, May 2025 (OpenShift 4.18)*
 
