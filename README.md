@@ -141,14 +141,13 @@ You can also use *docker*.
 You need to install Graal VM and set the correct pointer.
 
 ```shell
-$ export GRAALVM_HOME=~/graalvm-ce-java11-21.3.0/
-$ export JAVA_HOME=$GRAALVM_HOME
-$ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | docker]
-$ ls file target/monitor-demo-app-1.0-SNAPSHOT-runner
+$ mvn package -Pnative -DskipTests
+$ ls file target/monitor-demo-app-1.1-SNAPSHOT-runner
 
-$ target/monitor-demo-app-1.0-SNAPSHOT-runner
+$ target/monitor-demo-app-1.1-SNAPSHOT-runner
 
-$ 
+$ podman build -f src/main/docker/Dockerfile.native -t quarkus/monitor-demo-app-native .
+ 
 
 ```
 
