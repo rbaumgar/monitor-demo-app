@@ -17,12 +17,12 @@ For the monitoring, I will use the OpenShift Monitoring with a new feature for m
 You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
 
 News:
-- The developer can scale the application by using the *Custom Metrics Autoscaler Operator*, based on Kubernetes-based Event Driven Autoscaler (KEDA). It was released with OpernShift 4.12.
+- The developer can scale the application by using the *Custom Metrics Autoscaler Operator*, based on Kubernetes-based Event Driven Autoscaler (KEDA). It was released with OpenShift 4.12.
 - The developer can create alerts and forward these alerts to an external system.
 
 See [Configuring user workload monitoring](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/configuring-user-workload-monitoring)
 
-An older version of this document is available, but some features are no longer available. See [(old!) Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems](application-monitoring-old.md).
+This blog is the revised version of my earlier post from 2022, but some of the features mentioned in there are no longer available. See [(old!) Enabling Monitoring and Scaling of Your Own Services/Application, Creating Alert Rules and Sending to External Systems](application-monitoring-old.md).
 
 ## Enabling Monitoring of Your Own Services in OpenShift
 
@@ -68,7 +68,7 @@ thanos-ruler-user-workload-1           4/4     Running   0          60s
 - In the OpenShift Container Platform web console, click **Operators →  OperatorHub**.
 - Choose **Custom Metrics Autoscaler** from the list of available Operators, and click **Install**.
 - On the Install Operator page, ensure that the **All namespaces on the cluster (default)** option is selected for **Installation Mode**. This installs the Operator in all namespaces.
-- Ensure that the **openshift-keda** namespace is selected for **Installed Namespace**. OpenShift Container Platform creates the namespace, if not present in your cluster.
+- Ensure that the **openshift-keda** namespace is selected as **Installed Namespace**. OpenShift Container Platform creates the namespace, if not present in your cluster.
 - Click **Install**.
 - Verify the installation
 
@@ -109,7 +109,7 @@ EOF
 kedacontroller.keda.sh/keda created
 ```
 
-**watchNamespaces** specifies a single namespace in which the Custom Metrics Autoscaler Operator should scale applications. Leave it blank or leave it empty to scale applications in all namespaces. 
+**watchNamespaces** specifies a single namespace in which the Custom Metrics Autoscaler Operator should scale applications. Leave it blank or leave it empty to scale applications in all namespaces.
 
 Verify the keda pods are up and running
 
@@ -122,11 +122,11 @@ keda-metrics-apiserver-77556ffd5b-kkkm7               1/1     Running   0       
 keda-operator-7fbb8bc74f-fd228                        1/1     Running   0          41s
 ```
 
-## Understanding custom metrics autoscaler triggers 
+## Understanding Custom Metrics Autoscaler triggers
 
 Triggers, also known as scalers, provide the metrics that the Custom Metrics Autoscaler Operator uses to scale your pods.
 
-The custom metrics autoscaler currently supports the Prometheus, CPU, memory, Apache Kafka, and cron triggers.
+The Custom Metrics Autoscaler currently supports the Prometheus, CPU, memory, Apache Kafka, and cron triggers.
 
 You use a *ScaledObject* or *ScaledJob* custom resource to configure triggers for specific objects.
 
@@ -180,12 +180,12 @@ Using project "monitor-demo".
 
 All modern application development frameworks (like Quarkus) support out-of-the-box metrics features, like Eclipse Microprofile support in Quarkus, [Quarkus - MicroProfile Metrics](https://quarkus.io/guides/microprofile-metrics).
 
-To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring (APM)](https://github.com/rbaumgar/monitor-demo-app). 
+To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/monitor-demo-app: Quarkus demo app to show Application Performance Monitoring (APM)](https://github.com/rbaumgar/monitor-demo-app).
 
 Deploying a sample application monitor-demo-app and exposes a route:
 
 ```shell
-$ cat <<EOF |oc apply -f -
+$ cat <<EOF | oc apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -244,7 +244,7 @@ route.route.openshift.io/monitor-demo-app exposed
 
 If you want to use the Quarkus native image, change the image name in the deployment to *monitor-demo-app-native*.
 
-:star: It is very important that you define labels at the Deployment and Service. Those will be referenced later!
+> It is very important that you define labels at the Deployment and Service. Those will be referenced later!
 
 ### Test Sample Application
 
@@ -280,7 +280,7 @@ application_org_example_rbaumgar_PrimeNumberChecker_checksTimer_rate_per_second 
 ...
 ```
 
- With *application_greetings_total*, you will see how often you have called the */hello* URL. Later, we will use this metric.
+With *application_greetings_total*, you will see how often you have called the */hello* URL. Later, we will use this metric.
 
 ## Setting up Metrics Collection
 
@@ -310,11 +310,11 @@ NAME                   AGE
 monitor-demo-monitor   42s
 ```
 
-:star: For a Quarkus application, the default path for metrics is */q/metrics*, so you have to specify it!
+> For a Quarkus application, the default path for metrics is */q/metrics*, so you have to specify it!
 
 If you are not able to create the *ServiceMonitor*, you do not have the role *montitoring-rules-edit*.
 
-:star: The *matchLabels* must be the same as you defined at the Deployment and Service!
+> The *matchLabels* must be the same as you defined at the Deployment and Service!
 
 ## Accessing the Metrics of Your Service
 
@@ -324,13 +324,13 @@ Once you have enabled the monitoring of your own services, deployed a service, a
    
    - To access the metrics as a cluster administrator, go to the OpenShift Container Platform web console, switch to the Administrator Perspective, and click **Observer → Metrics** (OpenShift 4.8+).
      
-     :star: Cluster administrators, when using the Administrator Perspective, have access to all cluster metrics and to custom service metrics from all projects.
-     
-     :star: Only cluster administrators have access to the Alertmanager and Prometheus UIs.
-   
-   - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
-     
-     :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
+    > Cluster administrators, when using the Administrator Perspective, have access to all cluster metrics and to custom service metrics from all projects.
+
+    > Only cluster administrators have access to the Alertmanager and Prometheus UIs.
+
+    - To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
+
+    > Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
 2. Use the PromQL interface to run queries for your services.
 
@@ -350,21 +350,19 @@ PromQL Example: If you want to see the number of requests per second (rated in t
 
 You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
 
-Thanos Querier can be reached at: https://thanos-querier-openshift-monitoring.apps.your.cluster/graph
+Thanos Querier can be reached at: [https://thanos-querier-openshift-monitoring.apps.your.cluster/graph](https://thanos-querier-openshift-monitoring.apps.your.cluster/graph)
 
-:star: That you doesn't have a network policy in place which prevents th user workload monitoring to get metrics data.
+> That you don't have a network policy in place which prevents the user workload monitoring to get metrics data.
 
 If you are just interested in exposing application metrics to the dashboard, you can stop here.
 
 ## Exposing Custom Application Metrics for Auto-Scaling
 
-!!! You can export application metrics for the Horizontal Pod Autoscaler (HPA).
-
-Prometheus Adapter is a Technology Preview feature only. See [Exposing custom application metrics for autoscaling | Monitoring](https://docs.openshift.com/container-platform/4.6/monitoring/exposing-custom-application-metrics-for-autoscaling.html).
+You can export application metrics for the Horizontal Pod Autoscaler (HPA).
 
 ### Create a Service Account and a Secret to generate a Service Account Token
 
-Create a new service account to get access to the thanos data. Thanos hold the collected metrics.
+Create a new service account to get access to the Thanos data. Thanos holds the collected metrics.
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -485,9 +483,9 @@ EOF
 rolebinding.rbac.authorization.k8s.io/thanos-metrics-reader created
 ```
 
-## Create the Prometheus trigger 
+## Create the Prometheus Trigger
 
-The trigger accesses the data with the triggerAuthicator from thanos.
+The trigger accesses the data with the triggerAuthicator from Thanos.
 
 ```shell
 $ cat <<EOF | oc apply -f -
@@ -519,9 +517,9 @@ EOF
 scaledobject.keda.sh/monitor-so created
 ```
 
-:star: If you are using a different namespace, please don't forget to replace the namespace (monitor-demo). And when you want to scale a different deployment object, you have to change the *name* in the *scaleTargetRef*.
+> If you are using a different namespace, please don't forget to replace the namespace (monitor-demo). And when you want to scale a different deployment object, you have to change the *name* in the *scaleTargetRef*.
 
-Check the scaledoject and automatically created the Horizontal Pod Autoscaling/hpa
+Check the scaledobject and automatically created the Horizontal Pod Autoscaling/hpa
 
 ```shell
 $ oc get so
@@ -571,7 +569,7 @@ monitor-demo-app-67f655bf68-98qv7   1/1     Running   0          16m
 
 We see that the number of pods is increasing automatically.
 
-We can also check the HPA. 
+We can also check the HPA.
 
 Under *TARGETS* we see the actual value of *my_http_requests*:
 
@@ -670,7 +668,7 @@ EOF
 alertmanagerconfig.monitoring.coreos.com/example-routing created
 ```
 
-More Details [ Managing alerts as a Developer](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/managing-alerts#managing-alerts-as-a-developer)
+More Details [Managing alerts as a Developer](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/managing-alerts#managing-alerts-as-a-developer)
 
 ### Test Alert
 
@@ -778,9 +776,9 @@ $ oc logs deployment/monitor-demo-app -f
 }
 ```
 
-You will find in the application log two alters received. One when the alert is fired (status:firing) an one minute later when the alert is resolved (status:resolved).
+You will find in the application log two alerts received. One when the alert is fired (status:firing) and one minute later when the alert is resolved (status:resolved).
 
-Congratulation! Done!
+Congratulations! Done!
 
 ## Remove this Demo
 
@@ -797,9 +795,8 @@ $ oc edit configmap/cluster-monitoring-config -n openshift-monitoring
 $ oc get pod -n openshift-user-workload-monitoring
 ```
 
-The OpenShift custom metrics Autoscaler Operator can be removeed as cluster-admin at the console.
+The OpenShift Custom Metrics Autoscaler Operator can be removed as cluster-admin at the console.
 
+This document:
 
-This document: 
-
-**[Github: rbaumgar/monitor-demo-app](https://github.com/rbaumgar/monitor-demo-app/blob/master/application-monitoring.md)**
+[**Github: rbaumgar/monitor-demo-app**](https://github.com/rbaumgar/monitor-demo-app/blob/master/application-monitoring.md)
